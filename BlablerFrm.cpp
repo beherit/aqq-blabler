@@ -26,6 +26,9 @@
 #include <inifiles.hpp>
 #include <utilcls.h>
 #pragma package(smart_init)
+#ifdef _WIN64
+#pragma link "Vcl.IdAntiFreeze"
+#endif
 #pragma link "acProgressBar"
 #pragma link "sBevel"
 #pragma link "sButton"
@@ -82,7 +85,7 @@ void __fastcall TBlablerForm::WMTransparency(TMessage &Message)
 //---------------------------------------------------------------------------
 
 //Pobieranie pliku z danego URL
-bool __fastcall TBlablerForm::IdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
+bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
 {
   //Ustawianie pozycji pliku na poczatek
   File->Position = 0;
@@ -90,7 +93,7 @@ bool __fastcall TBlablerForm::IdHTTPGetFileToMem(TMemoryStream* File, UnicodeStr
   try
   {
 	//Wywolanie polaczenia
-	IdHTTP->Get(URL, File);
+	AIdHTTP->Get(URL, File);
   }
   //Blad
   catch(const Exception& e)
@@ -99,9 +102,9 @@ bool __fastcall TBlablerForm::IdHTTPGetFileToMem(TMemoryStream* File, UnicodeStr
 	if(e.Message=="Connection Closed Gracefully.")
 	{
 	  //Hack
-	  IdHTTP->CheckForGracefulDisconnect(false);
+	  AIdHTTP->CheckForGracefulDisconnect(false);
 	  //Rozlaczenie polaczenia
-	  IdHTTP->Disconnect();
+	  AIdHTTP->Disconnect();
 	  //Ustawianie pozycji pliku na poczatek
 	  File->Position = 0;
 	  return false;
@@ -110,7 +113,7 @@ bool __fastcall TBlablerForm::IdHTTPGetFileToMem(TMemoryStream* File, UnicodeStr
 	else
 	{
 	  //Rozlaczenie polaczenia
-	  IdHTTP->Disconnect();
+	  AIdHTTP->Disconnect();
 	  //Ustawianie pozycji pliku na poczatek
 	  File->Position = 0;
 	  return false;
@@ -125,7 +128,7 @@ bool __fastcall TBlablerForm::IdHTTPGetFileToMem(TMemoryStream* File, UnicodeStr
 	return false;
   }
   //Pobranie kodu odpowiedzi
-  int Response = IdHTTP->ResponseCode;
+  int Response = AIdHTTP->ResponseCode;
   //Wszystko ok
   if(Response==200)
    return true;
@@ -339,6 +342,7 @@ void __fastcall TBlablerForm::aForceDisconnectExecute(TObject *Sender)
   ForceDisconnect = true;
   //Rozlaczenie IdHTTP
   IdHTTP->Disconnect();
+  AIdHTTP->Disconnect();
   AUIdHTTP->Disconnect();
 }
 //---------------------------------------------------------------------------
@@ -870,7 +874,7 @@ void __fastcall TBlablerForm::AUIdHTTPTimerTimer(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::IdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
+void __fastcall TBlablerForm::AIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
 		  __int64 AWorkCountMax)
 {
   //Wlaczenie timera pilnujacego zawieszenie polaczenia
@@ -878,7 +882,7 @@ void __fastcall TBlablerForm::IdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkM
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::IdHTTPWork(TObject *ASender, TWorkMode AWorkMode,
+void __fastcall TBlablerForm::AIdHTTPWork(TObject *ASender, TWorkMode AWorkMode,
 		  __int64 AWorkCount)
 {
   //Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
@@ -887,7 +891,7 @@ void __fastcall TBlablerForm::IdHTTPWork(TObject *ASender, TWorkMode AWorkMode,
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::IdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
+void __fastcall TBlablerForm::AIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
 {
   //Wylaczenie timera pilnujacego zawieszenie polaczenia
   AvatarsIdHTTPTimer->Enabled = false;
@@ -901,7 +905,7 @@ void __fastcall TBlablerForm::AvatarsIdHTTPTimerTimer(TObject *Sender)
   //Odznaczenie wymuszenia przerwania polaczenia
   IdHTTPManualDisconnected = true;
   //Przerwanie polaczenia
-  IdHTTP->Disconnect();
+  AIdHTTP->Disconnect();
 }
 //---------------------------------------------------------------------------
 
@@ -916,7 +920,7 @@ void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 	TMemoryStream* MemFile = new TMemoryStream;
 	MemFile->Position = 0;
 	//Pobieranie awatara
-	if(IdHTTPGetFileToMem(MemFile,"http://beherit.pl/blabler/avatar.php?username=" + UserName))
+	if(AIdHTTPGetFileToMem(MemFile,"http://beherit.pl/blabler/avatar.php?username=" + UserName))
 	{
 	  MemFile->Position = 0;
 	  if(MemFile->Size!=0)

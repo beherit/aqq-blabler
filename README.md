@@ -12,7 +12,7 @@ Autorem wtyczki Blabler jest Krzysztof Grochocki. Możesz skontaktować się z n
 
 Licencja
 -------
-Wtyczka Blabler wykorzystuje licencję [GNU General Public License 3](http://www.gnu.org/copyleft/gpl.html).
+Wtyczka Blabler objęta jest licencją [GNU General Public License 3](http://www.gnu.org/copyleft/gpl.html).
 
     Blabler
     Copyright (C) 2013  Krzysztof Grochocki
