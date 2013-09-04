@@ -55,6 +55,8 @@
 #include <Vcl.ExtCtrls.hpp>
 #include <Vcl.FileCtrl.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include <IdAntiFreezeBase.hpp>
+#include <Vcl.IdAntiFreeze.hpp>
 //---------------------------------------------------------------------------
 class TBlablerForm : public TForm
 {
@@ -109,11 +111,13 @@ __published:	// IDE-managed Components
 	TsEdit *ItemHighlightMsgEdit;
 	TsComboBox *HighlightMsgModeComboBox;
 	TsLabel *HighlightMsgModeLabel;
-	TIdHTTP *IdHTTP;
+	TIdHTTP *AIdHTTP;
 	TMemo *FileMemo;
 	TTimer *AUIdHTTPTimer;
 	TTimer *AvatarsIdHTTPTimer;
 	TIdThreadComponent *GetAvatarsThread;
+	TIdHTTP *IdHTTP;
+	TIdAntiFreeze *IdAntiFreeze;
 	void __fastcall SaveButtonClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall aLoadSettingsExecute(TObject *Sender);
@@ -145,9 +149,9 @@ __published:	// IDE-managed Components
 	void __fastcall AUIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCountMax);
 	void __fastcall AUIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode);
 	void __fastcall AUIdHTTPTimerTimer(TObject *Sender);
-	void __fastcall IdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCountMax);
-	void __fastcall IdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount);
-	void __fastcall IdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode);
+	void __fastcall AIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCountMax);
+	void __fastcall AIdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount);
+	void __fastcall AIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode);
 	void __fastcall AvatarsIdHTTPTimerTimer(TObject *Sender);
 	void __fastcall GetAvatarsThreadRun(TIdThreadComponent *Sender);
 	void __fastcall ColorHighlightMsgEditChange(TObject *Sender);
@@ -157,7 +161,7 @@ public:		// User declarations
 	bool AUIdHTTPManualDisconnected;
 	__fastcall TBlablerForm(TComponent* Owner);
 	void __fastcall WMTransparency(TMessage &Message);
-	bool __fastcall IdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);
+	bool __fastcall AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);
 	bool __fastcall AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);
 	BEGIN_MESSAGE_MAP
 	MESSAGE_HANDLER(WM_ALPHAWINDOWS,TMessage,WMTransparency);
