@@ -214,10 +214,6 @@ object BlablerForm: TBlablerForm
       Caption = 'Awatary'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object AvatarsSizeGroupBox: TsGroupBox
         Left = 7
         Top = 3
@@ -542,10 +538,6 @@ object BlablerForm: TBlablerForm
       Caption = 'Wyr'#243#380'nianie'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object EraseHighlightMsgSpeedButton: TsSpeedButton
         Left = 17
         Top = 154
@@ -1035,9 +1027,6 @@ object BlablerForm: TBlablerForm
     Top = 296
   end
   object IdHTTP: TIdHTTP
-    OnWork = AIdHTTPWork
-    OnWorkBegin = AIdHTTPWorkBegin
-    OnWorkEnd = AIdHTTPWorkEnd
     AllowCookies = False
     HandleRedirects = True
     ProxyParams.BasicAuthentication = False
