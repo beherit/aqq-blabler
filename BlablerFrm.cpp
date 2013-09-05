@@ -100,24 +100,12 @@ bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeSt
   {
 	//Hack na wywalanie sie IdHTTP
 	if(e.Message=="Connection Closed Gracefully.")
-	{
-	  //Hack
-	  AIdHTTP->CheckForGracefulDisconnect(false);
-	  //Rozlaczenie polaczenia
-	  AIdHTTP->Disconnect();
-	  //Ustawianie pozycji pliku na poczatek
-	  File->Position = 0;
-	  return false;
-	}
-	//Inne bledy
-	else
-	{
-	  //Rozlaczenie polaczenia
-	  AIdHTTP->Disconnect();
-	  //Ustawianie pozycji pliku na poczatek
-	  File->Position = 0;
-	  return false;
-	}
+	 AIdHTTP->CheckForGracefulDisconnect(false);
+	//Rozlaczenie polaczenia
+	AIdHTTP->Disconnect();
+	//Ustawianie pozycji pliku na poczatek
+	File->Position = 0;
+	return false;
   }
   //Ustawianie pozycji pliku na poczatek
   File->Position = 0;
@@ -154,24 +142,12 @@ bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeS
   {
 	//Hack na wywalanie sie IdHTTP
 	if(e.Message=="Connection Closed Gracefully.")
-	{
-	  //Hack
-	  AUIdHTTP->CheckForGracefulDisconnect(false);
-	  //Rozlaczenie polaczenia
-	  AUIdHTTP->Disconnect();
-	  //Ustawianie pozycji pliku na poczatek
-	  File->Position = 0;
-	  return false;
-	}
-	//Inne bledy
-	else
-	{
-	  //Rozlaczenie polaczenia
-	  AUIdHTTP->Disconnect();
-	  //Ustawianie pozycji pliku na poczatek
-	  File->Position = 0;
-	  return false;
-	}
+	 AUIdHTTP->CheckForGracefulDisconnect(false);
+	//Rozlaczenie polaczenia
+	AUIdHTTP->Disconnect();
+	//Ustawianie pozycji pliku na poczatek
+	File->Position = 0;
+	return false;
   }
   //Ustawianie pozycji pliku na poczatek
   File->Position = 0;
@@ -707,7 +683,7 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *S
 	MemFile->Position = 0;
 	//Ustalanie adresu pobierania awataru
 	UnicodeString UpdateURL;
-	UpdateURL = "http://beherit.pl/blabler/avatar.php?username=" + ExtractFileName(FileListBox->FileName);
+	UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) +"/standard";
 	//Pobieranie awatara
 	if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
 	{
@@ -778,7 +754,7 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
 	MemFile->Position = 0;
 	//Ustalanie adresu pobierania awataru
 	UnicodeString UpdateURL;
-	UpdateURL = "http://beherit.pl/blabler/avatar.php?username=" + ExtractFileName(FileListBox->FileName);
+	UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) + "/standard";
 	//Pobieranie awatara
 	if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
 	{
@@ -920,7 +896,7 @@ void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 	TMemoryStream* MemFile = new TMemoryStream;
 	MemFile->Position = 0;
 	//Pobieranie awatara
-	if(AIdHTTPGetFileToMem(MemFile,"http://beherit.pl/blabler/avatar.php?username=" + UserName))
+	if(AIdHTTPGetFileToMem(MemFile,"http://api.blabler.pl/avatar/" + UserName + "/standard"))
 	{
 	  MemFile->Position = 0;
 	  if(MemFile->Size!=0)

@@ -1,3 +1,7 @@
+1.1.2.0
+* Pobieranie awatarów użytkowników poprzez API.
+* Małe zmiany optymalizacyjne w kodzie.
+
 1.1.0.0
 -----
 * Pokazywanie treści zacytowanych wiadomości.

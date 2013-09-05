@@ -76,11 +76,24 @@ int __stdcall OnPrimaryTab(WPARAM wParam, LPARAM lParam);
 int __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam);
 int __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam);
 int __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceQuoteMsgItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceInsertTagItem(WPARAM wParam, LPARAM lParam);
+int __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam);
 int __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam);
 int __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam);
 int __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam);
+//---------------------------------------------------------------------------
+
+//Otwarcie okna ustawien
+void OpenSettingsForm()
+{
+  //Przypisanie uchwytu do formy ustawien
+  if(!hBlablerForm)
+  {
+	Application->Handle = (HWND)BlablerForm;
+	hBlablerForm = new TBlablerForm(Application);
+  }
+  //Pokaznie okna ustawien
+  hBlablerForm->Show();
+}
 //---------------------------------------------------------------------------
 
 //Szukanie uchwytu do kontrolki TsRichEdit
@@ -357,16 +370,9 @@ UnicodeString IdHTTPGet(UnicodeString URL)
   {
 	//Hack na wywalanie sie IdHTTP
 	if(e.Message=="Connection Closed Gracefully.")
-	{
-	  //Hack
-	  hBlablerForm->IdHTTP->CheckForGracefulDisconnect(false);
-	  //Rozlaczenie polaczenia
-	  hBlablerForm->IdHTTP->Disconnect();
-	}
-	//Inne bledy
-	else
-	 //Rozlaczenie polaczenia
-	 hBlablerForm->IdHTTP->Disconnect();
+	 hBlablerForm->IdHTTP->CheckForGracefulDisconnect(false);
+	//Rozlaczenie polaczenia
+	hBlablerForm->IdHTTP->Disconnect();
 	//Zwrot pustych danych
 	return "";
   }
@@ -718,14 +724,8 @@ void BuildBlablerFastSettings()
 //Serwis szybkiego dostepu do ustawien wtyczki
 int __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam)
 {
-  //Przypisanie uchwytu do formy ustawien
-  if(!hBlablerForm)
-  {
-	Application->Handle = (HWND)BlablerForm;
-	hBlablerForm = new TBlablerForm(Application);
-  }
-  //Pokaznie okna ustawien
-  hBlablerForm->Show();
+  //Otwarcie okna ustawien
+  OpenSettingsForm();
 
   return 0;
 }
@@ -747,8 +747,8 @@ void FocusRichEdit()
 }
 //---------------------------------------------------------------------------
 
-//Serwis do wstawiania cytowania
-int __stdcall ServiceQuoteMsgItem(WPARAM wParam, LPARAM lParam)
+//Serwis do wstawiania danego tekstu
+int __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam)
 {
   //Szukanie pola wiadomosci
   if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
@@ -758,7 +758,7 @@ int __stdcall ServiceQuoteMsgItem(WPARAM wParam, LPARAM lParam)
   GetWindowTextW(hRichEdit, pBuff, iLength);
   UnicodeString Text = pBuff;
   delete pBuff;
-  //Wiadomosc nie zawiera juz wskazanego URL
+  //Wiadomosc nie zawiera juz wskazanego tekstu
   if(!Text.Pos(ItemCopyData))
   {
 	//Usuwanie znakow spacji z prawej strony
@@ -769,38 +769,7 @@ int __stdcall ServiceQuoteMsgItem(WPARAM wParam, LPARAM lParam)
 	else
 	 SetWindowTextW(hRichEdit, (ItemCopyData + " ").w_str());
   }
-  //Kasowanie URL
-  ItemCopyData = "";
-  //Ustawienie fokusa na polu wpisywania wiadomosci
-  FocusRichEdit();
-
-  return 0;
-}
-//---------------------------------------------------------------------------
-
-//Serwis do wstawiania tagu
-int __stdcall ServiceInsertTagItem(WPARAM wParam, LPARAM lParam)
-{
-  //Szukanie pola wiadomosci
-  if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
-  //Pobieranie tekstu z RichEdit
-  int iLength = GetWindowTextLengthW(hRichEdit)+1;
-  wchar_t* pBuff = new wchar_t[iLength];
-  GetWindowTextW(hRichEdit, pBuff, iLength);
-  UnicodeString Text = pBuff;
-  delete pBuff;
-  //Wiadomosc nie zawiera wskazanego tagu
-  if(!Text.Pos(ItemCopyData))
-  {
-	//Usuwanie znakow spacji z prawej strony
-	Text = Text.TrimRight();
-	//Ustawianie tekstu
-	if(!Text.IsEmpty())
-	 SetWindowTextW(hRichEdit, (Text + " " + ItemCopyData + " ").w_str());
-	else
-	 SetWindowTextW(hRichEdit, (ItemCopyData + " ").w_str());
-  }
-  //Kasowanie tagu
+  //Kasowanie tekstu
   ItemCopyData = "";
   //Ustawienie fokusa na polu wpisywania wiadomosci
   FocusRichEdit();
@@ -1527,7 +1496,7 @@ int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  if(!FileExists(AvatarsDir + "\\\\" + BlablerSender))
 	  {
 		//Wstawienie online'owego awatara
-		Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://beherit.pl/blabler/avatar.php?username=" + BlablerSender + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+		Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerSender + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 		//Dodanie awatara do pobrania
 		GetAvatarsList->Add(BlablerSender);
 		//Wlaczenie watku
@@ -1544,7 +1513,7 @@ int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		if(!FileExists(AvatarsDir + "\\\\" + BlablerReceiver))
 		{
 		  //Wstawienie online'owego awatara
-		  Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://beherit.pl/blabler/avatar.php?username=" + BlablerReceiver + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+		  Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerReceiver + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 		  //Dodanie awatara do pobrania
 		  GetAvatarsList->Add(BlablerReceiver);
 		  //Wlaczenie watku
@@ -1663,7 +1632,7 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 	  QuoteMsgItem.pszCaption = L"Cytuj";
 	  QuoteMsgItem.Position = 0;
 	  QuoteMsgItem.IconIndex = 8;
-	  QuoteMsgItem.pszService = L"sBlablerQuoteMsgItem";
+	  QuoteMsgItem.pszService = L"sBlablerInsertItem";
 	  QuoteMsgItem.pszPopupName = L"popURL";
 	  QuoteMsgItem.Handle = (int)hFrmSend;
 	  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&QuoteMsgItem));
@@ -1693,7 +1662,7 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 		InsertTagItem.pszCaption = ("Wstaw " + ItemCopyData).w_str();
 		InsertTagItem.Position = 0;
 		InsertTagItem.IconIndex = 11;
-		InsertTagItem.pszService = L"sBlablerInsertTagItem";
+		InsertTagItem.pszService = L"sBlablerInsertItem";
 		InsertTagItem.pszPopupName = L"popURL";
 		InsertTagItem.Handle = (int)hFrmSend;
 		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&InsertTagItem));
@@ -2039,10 +2008,8 @@ extern "C" int __declspec(dllexport) __stdcall Load(PPluginLink Link)
   //Tworzenie serwisow
   //Szybki dostep do ustawien wtyczki
   PluginLink.CreateServiceFunction(L"sBlablerFastSettingsItem",ServiceBlablerFastSettingsItem);
-  //Serwis do cytowania wiadomosci
-  PluginLink.CreateServiceFunction(L"sBlablerQuoteMsgItem",ServiceQuoteMsgItem);
-  //Serwis do wstawiania tagu
-  PluginLink.CreateServiceFunction(L"sBlablerInsertTagItem",ServiceInsertTagItem);
+  //Serwis do wstawiania danego tekstu
+  PluginLink.CreateServiceFunction(L"sBlablerInsertItem",ServiceInsertItem);
   //Serwis do wstawiania nicku
   PluginLink.CreateServiceFunction(L"sBlablerInsertNickItem",ServiceInsertNickItem);
   //Serwis do wysylania wiadomosci prywatnej
@@ -2144,8 +2111,7 @@ extern "C" int __declspec(dllexport) __stdcall Unload()
   PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SeparatorItem));
   //Usuwanie serwisow
   PluginLink.DestroyServiceFunction(ServiceBlablerFastSettingsItem);
-  PluginLink.DestroyServiceFunction(ServiceQuoteMsgItem);
-  PluginLink.DestroyServiceFunction(ServiceInsertTagItem);
+  PluginLink.DestroyServiceFunction(ServiceInsertItem);
   PluginLink.DestroyServiceFunction(ServiceInsertNickItem);
   PluginLink.DestroyServiceFunction(ServiceSendMsgItem);
   PluginLink.DestroyServiceFunction(ServiceSendPrivMsgItem);
@@ -2157,14 +2123,8 @@ extern "C" int __declspec(dllexport) __stdcall Unload()
 //Ustawienia wtyczki
 extern "C" int __declspec(dllexport)__stdcall Settings()
 {
-  //Przypisanie uchwytu do formy ustawien
-  if(!hBlablerForm)
-  {
-	Application->Handle = (HWND)BlablerForm;
-	hBlablerForm = new TBlablerForm(Application);
-  }
-  //Pokaznie okna ustawien
-  hBlablerForm->Show();
+  //Otwarcie okna ustawien
+  OpenSettingsForm();
 
   return 0;
 }
@@ -2175,7 +2135,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,1,0,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,1,2,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";
