@@ -170,10 +170,6 @@ bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeS
 
 void __fastcall TBlablerForm::FormCreate(TObject *Sender)
 {
-  //Hack na blad w AC
-  #if defined(_WIN64)
-  HighlightMsgListView->SkinData->SkinSection = "";
-  #endif
   //Wlaczona zaawansowana stylizacja okien
   if(ChkSkinEnabled())
   {
