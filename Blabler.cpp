@@ -42,6 +42,10 @@ TBlablerForm* hBlablerForm;
 TPluginLink PluginLink;
 TPluginInfo PluginInfo;
 //---------------------------------------------------------------------------
+//Informacje o kontakcie z botem
+UnicodeString BotJID;
+UnicodeString BotRes;
+int BotUsrIdx;
 //Styl zalacznika
 UnicodeString AttachmentStyle;
 //Awatary
@@ -67,19 +71,22 @@ int HighlightMsgModeChk;
 TStringList *HighlightMsgItemsList = new TStringList;
 TCustomIniFile* HighlightMsgColorsList = new TMemIniFile(ChangeFileExt(Application->ExeName, ".INI"));
 //FORWARD-AQQ-HOOKS----------------------------------------------------------
-int __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam);
-int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam);
-int __stdcall OnColorChange(WPARAM wParam, LPARAM lParam);
-int __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam);
-int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam);
-int __stdcall OnPrimaryTab(WPARAM wParam, LPARAM lParam);
-int __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam);
-int __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam);
-int __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnPrimaryTab(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceLikeMsgItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceWatchUserItem(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall ServiceWatchTagItem(WPARAM wParam, LPARAM lParam);
 //---------------------------------------------------------------------------
 
 //Otwarcie okna ustawien
@@ -110,6 +117,22 @@ bool CALLBACK FindRichEdit(HWND hWnd, LPARAM)
 	return false;
   }
   return true;
+}
+//---------------------------------------------------------------------------
+
+//Ustawienie fokusa na polu wpisywania wiadomosci
+void FocusRichEdit()
+{
+  //Ustawianie fokusa
+  SetFocus(hRichEdit);
+  //Pobieranie dlugosci tekstu z RichEdit
+  int iLength = GetWindowTextLengthW(hRichEdit)+1;
+  //Zmiana pozycji kursora
+  CHARRANGE SelPos;
+  SendMessage(hRichEdit, EM_EXGETSEL, NULL, (LPARAM)&SelPos);
+  SelPos.cpMin = iLength;
+  SelPos.cpMax = iLength;
+  SendMessage(hRichEdit, EM_EXSETSEL, NULL, (LPARAM)&SelPos);
 }
 //---------------------------------------------------------------------------
 
@@ -610,13 +633,18 @@ void AutoAvatarsUpdate()
 	  //Pobieranie listy plikow
 	  hBlablerForm->FileListBox->Directory = "";
 	  hBlablerForm->FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
-	  //Ignoowanie plikow *.tmp
+	  //Ignorowanie plikow *.tmp i plikow ze spacja (np. konflikty stworzone przez Dropbox'a)
 	  for(int Count=0;Count<hBlablerForm->FileListBox->Items->Count;Count++)
 	  {
 		if(ExtractFileName(hBlablerForm->FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
 		{
 		  DeleteFile(hBlablerForm->FileListBox->Items->Strings[Count]);
 		  hBlablerForm->FileListBox->Items->Strings[Count] ="TMP_DELETE";
+		}
+		else if(ExtractFileName(hBlablerForm->FileListBox->Items->Strings[Count]).Pos(" ")>0)
+		{
+		  DeleteFile(hBlablerForm->FileListBox->Items->Strings[Count]);
+		  hBlablerForm->FileListBox->Items->Strings[Count] = "TMP_DELETE";
 		}
 	  }
 	  while(hBlablerForm->FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
@@ -704,6 +732,16 @@ int UsersCutPosition(UnicodeString Text)
 }
 //---------------------------------------------------------------------------
 
+//Usuwanie elementu szybkiego dostepu do ustawien wtyczki
+void DestroyBlablerFastSettings()
+{
+  TPluginAction FastSettingsItem;
+  ZeroMemory(&FastSettingsItem,sizeof(TPluginAction));
+  FastSettingsItem.cbSize = sizeof(TPluginAction);
+  FastSettingsItem.pszName = L"BlablerFastSettingsItemButton";
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM,0,(LPARAM)(&FastSettingsItem));
+}
+//---------------------------------------------------------------------------
 //Tworzenie elementu szybkiego dostepu do ustawien wtyczki
 void BuildBlablerFastSettings()
 {
@@ -721,8 +759,259 @@ void BuildBlablerFastSettings()
 }
 //---------------------------------------------------------------------------
 
+//Usuwanie elementu cytowania
+void DestroyQuoteMsgItem()
+{
+  TPluginAction QuoteMsgItem;
+  ZeroMemory(&QuoteMsgItem,sizeof(TPluginAction));
+  QuoteMsgItem.cbSize = sizeof(TPluginAction);
+  QuoteMsgItem.pszName = L"BlablerQuoteMsgItem";
+  QuoteMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&QuoteMsgItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu cytowania
+void BuildQuoteMsgItem()
+{
+  TPluginAction QuoteMsgItem;
+  ZeroMemory(&QuoteMsgItem,sizeof(TPluginAction));
+  QuoteMsgItem.cbSize = sizeof(TPluginAction);
+  QuoteMsgItem.pszName = L"BlablerQuoteMsgItem";
+  QuoteMsgItem.pszCaption = L"Cytuj";
+  QuoteMsgItem.Position = 0;
+  QuoteMsgItem.IconIndex = 8;
+  QuoteMsgItem.pszService = L"sBlablerInsertItem";
+  QuoteMsgItem.pszPopupName = L"popURL";
+  QuoteMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&QuoteMsgItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu wstawiania tagu
+void DestroyInsertTagItem()
+{
+  TPluginAction InsertTagItem;
+  ZeroMemory(&InsertTagItem,sizeof(TPluginAction));
+  InsertTagItem.cbSize = sizeof(TPluginAction);
+  InsertTagItem.pszName = L"BlablerInsertTagItem";
+  InsertTagItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertTagItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu wstawiania tagu
+void BuildInsertTagItem()
+{
+  TPluginAction InsertTagItem;
+  ZeroMemory(&InsertTagItem,sizeof(TPluginAction));
+  InsertTagItem.cbSize = sizeof(TPluginAction);
+  InsertTagItem.pszName = L"BlablerInsertTagItem";
+  InsertTagItem.pszCaption = ("Wstaw " + ItemCopyData).w_str();
+  InsertTagItem.Position = 0;
+  InsertTagItem.IconIndex = 11;
+  InsertTagItem.pszService = L"sBlablerInsertItem";
+  InsertTagItem.pszPopupName = L"popURL";
+  InsertTagItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&InsertTagItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu lajkowania
+void DestroyLikeMsgItem()
+{
+  TPluginAction LikeMsgItem;
+  ZeroMemory(&LikeMsgItem,sizeof(TPluginAction));
+  LikeMsgItem.cbSize = sizeof(TPluginAction);
+  LikeMsgItem.pszName = L"BlablerLikeMsgItem";
+  LikeMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&LikeMsgItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu lajkowania
+void BuildLikeMsgItem()
+{
+  TPluginAction LikeMsgItem;
+  ZeroMemory(&LikeMsgItem,sizeof(TPluginAction));
+  LikeMsgItem.cbSize = sizeof(TPluginAction);
+  LikeMsgItem.pszName = L"BlablerLikeMsgItem";
+  LikeMsgItem.pszCaption = L"Polub";
+  LikeMsgItem.Position = 0;
+  LikeMsgItem.IconIndex = 157;
+  LikeMsgItem.pszService = L"sBlablerLikeMsgItem";
+  LikeMsgItem.pszPopupName = L"popURL";
+  LikeMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&LikeMsgItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu wstawiania nicku
+void DestroyInsertNickItem()
+{
+  TPluginAction InsertNickItem;
+  ZeroMemory(&InsertNickItem,sizeof(TPluginAction));
+  InsertNickItem.cbSize = sizeof(TPluginAction);
+  InsertNickItem.pszName = L"BlablerInsertNickItem";
+  InsertNickItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertNickItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu wstawiania nicku
+void BuildInsertNickItem()
+{
+  TPluginAction InsertNickItem;
+  ZeroMemory(&InsertNickItem,sizeof(TPluginAction));
+  InsertNickItem.cbSize = sizeof(TPluginAction);
+  InsertNickItem.pszName = L"BlablerInsertNickItem";
+  InsertNickItem.pszCaption = ("Wstaw ^" + ItemCopyData).w_str();
+  InsertNickItem.Position = 0;
+  InsertNickItem.IconIndex = 11;
+  InsertNickItem.pszService = L"sBlablerInsertNickItem";
+  InsertNickItem.pszPopupName = L"popURL";
+  InsertNickItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&InsertNickItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu wysylania wiadomosci
+void DestroySendMsgItem()
+{
+  TPluginAction SendMsgItem;
+  ZeroMemory(&SendMsgItem,sizeof(TPluginAction));
+  SendMsgItem.cbSize = sizeof(TPluginAction);
+  SendMsgItem.pszName = L"BlablerSendMsgItem";
+  SendMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendMsgItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu wysylania wiadomosci
+void BuildSendMsgItem()
+{
+  TPluginAction SendMsgItem;
+  ZeroMemory(&SendMsgItem,sizeof(TPluginAction));
+  SendMsgItem.cbSize = sizeof(TPluginAction);
+  SendMsgItem.pszName = L"BlablerSendMsgItem";
+  SendMsgItem.pszCaption = L"Wiadomoœæ";
+  SendMsgItem.Position = 0;
+  SendMsgItem.IconIndex = 8;
+  SendMsgItem.pszService = L"sBlablerSendMsgItem";
+  SendMsgItem.pszPopupName = L"popURL";
+  SendMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SendMsgItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu wysylania prywatnej wiadomosci
+void DestroySendPrivMsgItem()
+{
+  TPluginAction SendPrivMsgItem;
+  ZeroMemory(&SendPrivMsgItem,sizeof(TPluginAction));
+  SendPrivMsgItem.cbSize = sizeof(TPluginAction);
+  SendPrivMsgItem.pszName = L"BlablerSendPrivMsgItem";
+  SendPrivMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendPrivMsgItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu wysylania prywatnej wiadomosci
+void BuildSendPrivMsgItem()
+{
+  TPluginAction SendPrivMsgItem;
+  ZeroMemory(&SendPrivMsgItem,sizeof(TPluginAction));
+  SendPrivMsgItem.cbSize = sizeof(TPluginAction);
+  SendPrivMsgItem.pszName = L"BlablerSendPrivMsgItem";
+  SendPrivMsgItem.pszCaption = L"Wiadomoœæ prywatna";
+  SendPrivMsgItem.Position = 0;
+  SendPrivMsgItem.IconIndex = 8;
+  SendPrivMsgItem.pszService = L"sBlablerSendPrivMsgItem";
+  SendPrivMsgItem.pszPopupName = L"popURL";
+  SendPrivMsgItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SendPrivMsgItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu obserowania uzytkownika
+void DestroyWatchUserItem()
+{
+  TPluginAction WatchUserItem;
+  ZeroMemory(&WatchUserItem,sizeof(TPluginAction));
+  WatchUserItem.cbSize = sizeof(TPluginAction);
+  WatchUserItem.pszName = L"BlablerWatchUserItem";
+  WatchUserItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&WatchUserItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu obserowania uzytkownika
+void BuildWatchUserItem()
+{
+  TPluginAction WatchUserItem;
+  ZeroMemory(&WatchUserItem,sizeof(TPluginAction));
+  WatchUserItem.cbSize = sizeof(TPluginAction);
+  WatchUserItem.pszName = L"BlablerWatchUserItem";
+  WatchUserItem.pszCaption = ("Obserwuj ^" + ItemCopyData).w_str();
+  WatchUserItem.Position = 0;
+  WatchUserItem.IconIndex = 86;
+  WatchUserItem.pszService = L"sBlablerWatchUserItem";
+  WatchUserItem.pszPopupName = L"popURL";
+  WatchUserItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&WatchUserItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie elementu obserowania tagu
+void DestroyWatchTagItem()
+{
+  TPluginAction WatchTagItem;
+  ZeroMemory(&WatchTagItem,sizeof(TPluginAction));
+  WatchTagItem.cbSize = sizeof(TPluginAction);
+  WatchTagItem.pszName = L"BlablerWatchTagItem";
+  WatchTagItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&WatchTagItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie elementu obserowania tagu
+void BuildWatchTagItem()
+{
+  TPluginAction WatchTagItem;
+  ZeroMemory(&WatchTagItem,sizeof(TPluginAction));
+  WatchTagItem.cbSize = sizeof(TPluginAction);
+  WatchTagItem.pszName = L"BlablerWatchTagItem";
+  WatchTagItem.pszCaption = ("Obserwuj " + ItemCopyData).w_str();
+  WatchTagItem.Position = 0;
+  WatchTagItem.IconIndex = 86;
+  WatchTagItem.pszService = L"sBlablerWatchTagItem";
+  WatchTagItem.pszPopupName = L"popURL";
+  WatchTagItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&WatchTagItem));
+}
+//---------------------------------------------------------------------------
+
+//Usuwanie separatora
+void DestroySeparatorItem()
+{
+  TPluginAction SeparatorItem;
+  ZeroMemory(&SeparatorItem,sizeof(TPluginAction));
+  SeparatorItem.cbSize = sizeof(TPluginAction);
+  SeparatorItem.pszName = L"BlablerSeparatorItem";
+  SeparatorItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SeparatorItem));
+}
+//---------------------------------------------------------------------------
+//Tworzenie separatora
+void BuildSeparatorItem()
+{
+  TPluginAction SeparatorItem;
+  ZeroMemory(&SeparatorItem,sizeof(TPluginAction));
+  SeparatorItem.cbSize = sizeof(TPluginAction);
+  SeparatorItem.pszName = L"BlablerSeparatorItem";
+  SeparatorItem.pszCaption = L"-";
+  SeparatorItem.Position = 0;
+  SeparatorItem.IconIndex = 0;
+  SeparatorItem.pszPopupName = L"popURL";
+  SeparatorItem.Handle = (int)hFrmSend;
+  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SeparatorItem));
+}
+//---------------------------------------------------------------------------
+
 //Serwis szybkiego dostepu do ustawien wtyczki
-int __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam)
 {
   //Otwarcie okna ustawien
   OpenSettingsForm();
@@ -731,24 +1020,8 @@ int __stdcall ServiceBlablerFastSettingsItem(WPARAM wParam, LPARAM lParam)
 }
 //---------------------------------------------------------------------------
 
-//Ustawienie fokusa na polu wpisywania wiadomosci
-void FocusRichEdit()
-{
-  //Ustawianie fokusa
-  SetFocus(hRichEdit);
-  //Pobieranie dlugosci tekstu z RichEdit
-  int iLength = GetWindowTextLengthW(hRichEdit)+1;
-  //Zmiana pozycji kursora
-  CHARRANGE SelPos;
-  SendMessage(hRichEdit, EM_EXGETSEL, NULL, (LPARAM)&SelPos);
-  SelPos.cpMin = iLength;
-  SelPos.cpMax = iLength;
-  SendMessage(hRichEdit, EM_EXSETSEL, NULL, (LPARAM)&SelPos);
-}
-//---------------------------------------------------------------------------
-
 //Serwis do wstawiania danego tekstu
-int __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam)
 {
   //Szukanie pola wiadomosci
   if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
@@ -778,8 +1051,33 @@ int __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam)
 }
 //---------------------------------------------------------------------------
 
+//Serwis do lajkowania wiadomosci
+INT_PTR __stdcall ServiceLikeMsgItem(WPARAM wParam, LPARAM lParam)
+{
+  //Struktura kontaktu
+  TPluginContact PluginContact;
+  ZeroMemory(&PluginContact,sizeof(TPluginContact));
+  PluginContact.JID = BotJID.w_str();
+  PluginContact.Resource = BotRes.w_str();
+  PluginContact.FromPlugin = false;
+  PluginContact.UserIdx = BotUsrIdx;
+  //Struktura wiadomosci
+  TPluginMessage PluginMessage;
+  ZeroMemory(&PluginMessage,sizeof(TPluginMessage));
+  PluginMessage.cbSize = sizeof(TPluginMessage);
+  PluginMessage.JID = BotJID.w_str();
+  PluginMessage.Body = ("!ilove " + ItemCopyData).w_str();
+  PluginMessage.Store = true;
+  PluginMessage.ShowAsOutgoing = true;
+  //Wysylanie wiadomosci
+  PluginLink.CallService(AQQ_CONTACTS_SENDMSG ,(WPARAM)(&PluginContact),(LPARAM)(&PluginMessage));
+
+  return 0;
+}
+//---------------------------------------------------------------------------
+
 //Serwis do wstawiania nicku
-int __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam)
 {
   //Szukanie pola wiadomosci
   if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
@@ -810,7 +1108,7 @@ int __stdcall ServiceInsertNickItem(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Serwis do wysylania wiadomosci
-int __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam)
 {
   //Szukanie pola wiadomosci
   if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
@@ -844,7 +1142,7 @@ int __stdcall ServiceSendMsgItem(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Serwis do wysylania prywatnej wiadomosci
-int __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam)
 {
   //Szukanie pola wiadomosci
   if(!hRichEdit) EnumChildWindows(hFrmSend,(WNDENUMPROC)FindRichEdit,0);
@@ -877,8 +1175,60 @@ int __stdcall ServiceSendPrivMsgItem(WPARAM wParam, LPARAM lParam)
 }
 //---------------------------------------------------------------------------
 
+//Serwis do obserowania uzytkownika
+INT_PTR __stdcall ServiceWatchUserItem(WPARAM wParam, LPARAM lParam)
+{
+  //Struktura kontaktu
+  TPluginContact PluginContact;
+  ZeroMemory(&PluginContact,sizeof(TPluginContact));
+  PluginContact.JID = BotJID.w_str();
+  PluginContact.Resource = BotRes.w_str();
+  PluginContact.FromPlugin = false;
+  PluginContact.UserIdx = BotUsrIdx;
+  //Struktura wiadomosci
+  TPluginMessage PluginMessage;
+  ZeroMemory(&PluginMessage,sizeof(TPluginMessage));
+  PluginMessage.cbSize = sizeof(TPluginMessage);
+  PluginMessage.JID = BotJID.w_str();
+  PluginMessage.Body = ("!obserwuj " + ItemCopyData).w_str();
+  PluginMessage.Store = true;
+  PluginMessage.ShowAsOutgoing = true;
+  //Wysylanie wiadomosci
+  PluginLink.CallService(AQQ_CONTACTS_SENDMSG ,(WPARAM)(&PluginContact),(LPARAM)(&PluginMessage));
+
+  return 0;
+}
+//---------------------------------------------------------------------------
+
+//Serwis do obserowania tagu
+INT_PTR __stdcall ServiceWatchTagItem(WPARAM wParam, LPARAM lParam)
+{
+  //Usuniecie hasha
+  ItemCopyData.Delete(1,1);
+  //Struktura kontaktu
+  TPluginContact PluginContact;
+  ZeroMemory(&PluginContact,sizeof(TPluginContact));
+  PluginContact.JID = BotJID.w_str();
+  PluginContact.Resource = BotRes.w_str();
+  PluginContact.FromPlugin = false;
+  PluginContact.UserIdx = BotUsrIdx;
+  //Struktura wiadomosci
+  TPluginMessage PluginMessage;
+  ZeroMemory(&PluginMessage,sizeof(TPluginMessage));
+  PluginMessage.cbSize = sizeof(TPluginMessage);
+  PluginMessage.JID = BotJID.w_str();
+  PluginMessage.Body = ("!tag +" + ItemCopyData).w_str();
+  PluginMessage.Store = true;
+  PluginMessage.ShowAsOutgoing = true;
+  //Wysylanie wiadomosci
+  PluginLink.CallService(AQQ_CONTACTS_SENDMSG ,(WPARAM)(&PluginContact),(LPARAM)(&PluginMessage));
+
+  return 0;
+}
+//---------------------------------------------------------------------------
+
 //Hook na aktwyna zakladke lub okno rozmowy (pokazywanie menu do cytowania, tworzenie buttonow)
-int __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam)
 {
   //Pobranie uchwytu do okna rozmowy
   if(!hFrmSend) hFrmSend = (HWND)wParam;
@@ -893,6 +1243,10 @@ int __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam)
   {
 	//"Wlaczenie" procki zbierajacej adresu URL
 	BlockPerformCopyData = false;
+	//Zapamietanie danych kontatku
+	BotJID = (wchar_t*)ActiveTabContact.JID;
+	BotRes = (wchar_t*)ActiveTabContact.Resource;
+	BotUsrIdx = ActiveTabContact.UserIdx;
   }
   else
   {
@@ -905,7 +1259,7 @@ int __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Hook na pokazywane wiadomosci
-int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 {
   //Pobieranie danych kontatku
   TPluginContact AddLineContact = *(PPluginContact)wParam;
@@ -917,7 +1271,7 @@ int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	//Nadawca i odbiorca wiadomosci
 	UnicodeString BlablerSender = "";
 	UnicodeString BlablerReceiver = "";
-	//Pobieranie informacji  wiadomosci
+	//Pobieranie informacji o wiadomosci
 	TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
 	UnicodeString MessageDate = (double)AddLineMessage.Date;
 	UnicodeString MessageJID = (wchar_t*)AddLineMessage.JID;
@@ -1481,8 +1835,8 @@ int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		//Usuwanie wczesniej dodanych tagow
 		Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
 		Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
-      }
-    }
+	  }
+	}
 
 	//Dodawanie awatarow
 	if((ContactJID==MessageJID)&&(!BlablerSender.IsEmpty()))
@@ -1531,13 +1885,125 @@ int __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	memcpy((PPluginMessage)lParam,&AddLineMessage, sizeof(TPluginMessage));
 	return 2;
   }
+  //Zacytowane wiadomosci poza botem Blablera
+  else
+  {
+	//Pobieranie informacji o wiadomosci
+	TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
+	UnicodeString Body = (wchar_t*)AddLineMessage.Body;
+	Body = Body.Trim();
+	//Tekst zawiera zacytowane wiadomosci
+	if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/")))
+	{
+	  //Dodawanie specjalnych tagow do wszystkich linkow
+	  Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
+	  Body = StringReplace(Body, "</A>", "</A>[CC_LINK_END]", TReplaceFlags() << rfReplaceAll);
+	  while(Body.Pos("[CC_LINK_END]"))
+	  {
+		//Wyciagniecie kodu HTML odnosnika
+		UnicodeString URL = Body;
+		URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
+		URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
+		//Zacytowane wiadomosci
+		if((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/")))
+		{
+		  //Odnosnik z parametrem title
+		  if(URL.Pos("title="))
+		  {
+			//Wyciaganie zawartosci title
+			UnicodeString Title = URL;
+			Title.Delete(1,Title.Pos("title=\"")+6);
+			Title.Delete(Title.Pos("\""),Title.Length());
+			//Wyciaganie ID wiadomosci
+			UnicodeString ID = Title;
+			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+			//Szukanie wiadomosci w cache
+			TIniFile *Ini = new TIniFile(CacheDir);
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
+			UnicodeString From = Ini->ReadString(ID,"From","");
+			delete Ini;
+			//Wiadomosc nie zapisana w cache
+			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+			{
+			  //Pobieranie danych przez API
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  {
+				//Ponowne szukanie wiadomosci w cache
+				TIniFile *Ini = new TIniFile(CacheDir);
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
+				From = Ini->ReadString(ID,"From","");
+				delete Ini;
+			  }
+			}
+			//Wiadomosc zapisana w cache
+			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+			{
+			  //Formatowanie tresci zacytowanej wiadomosci
+			  QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+			  QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+			  QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+			  //Podmiana danych w odnosniku
+			  UnicodeString tmpURL = URL;
+			  tmpURL = StringReplace(tmpURL, "title=\""+Title+"\"", "title=\""+From+": "+QuoteBody+"\"", TReplaceFlags());
+			  Body = StringReplace(Body, URL, tmpURL, TReplaceFlags());
+			}
+		  }
+		  //Odnosnik bez parametru title
+		  else
+		  {
+			//Wyciaganie ID wiadomosci
+			UnicodeString ID = URL;
+			ID.Delete(1,ID.Pos(">"));
+			ID.Delete(ID.Pos("<"),ID.Length());
+			URL = ID;
+			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+			//Szukanie wiadomosci w cache
+			TIniFile *Ini = new TIniFile(CacheDir);
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
+			UnicodeString From = Ini->ReadString(ID,"From","");
+			delete Ini;
+			//Wiadomosc nie zapisana w cache
+			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+			{
+			  //Pobieranie danych przez API
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  {
+				//Ponowne szukanie wiadomosci w cache
+				TIniFile *Ini = new TIniFile(CacheDir);
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
+				From = Ini->ReadString(ID,"From","");
+				delete Ini;
+			  }
+			}
+			//Wiadomosc zapisana w cache
+			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+			{
+			  //Formatowanie tresci zacytowanej wiadomosci
+			  QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+			  QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+			  QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+			  //Podmiana danych w odnosniku
+			  Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+From+": "+QuoteBody+"\">"+URL, TReplaceFlags());
+			}
+		  }
+		}
+		//Usuwanie wczesniej dodanych tagow
+		Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
+		Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
+	  }
+	  //Zwrocenie zmodyfikowanej wiadomosci;
+	  AddLineMessage.Body = Body.w_str();
+	  memcpy((PPluginMessage)lParam,&AddLineMessage, sizeof(TPluginMessage));
+	  return 2;
+	}
+  }
 
   return 0;
 }
 //---------------------------------------------------------------------------
 
 //Hook na zmiane kolorystyki AlphaControls
-int __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
 {
   //Okno ustawien zostalo juz stworzone
   if(hBlablerForm)
@@ -1555,7 +2021,7 @@ int __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Hook na zaladowanie wszystkich modulow w AQQ (autoupdate awatarow)
-int __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
   //Automatyczna aktualizacja awatarow
   AutoAvatarsUpdate();
@@ -1565,45 +2031,18 @@ int __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Hook na pobieranie adresow URL z roznych popup
-int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 {
   //Domyslne usuwanie elementow
-  TPluginAction QuoteMsgItem;
-  ZeroMemory(&QuoteMsgItem,sizeof(TPluginAction));
-  QuoteMsgItem.cbSize = sizeof(TPluginAction);
-  QuoteMsgItem.pszName = L"BlablerQuoteMsgItem";
-  QuoteMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&QuoteMsgItem)); 
-  TPluginAction InsertTagItem;
-  ZeroMemory(&InsertTagItem,sizeof(TPluginAction));
-  InsertTagItem.cbSize = sizeof(TPluginAction);
-  InsertTagItem.pszName = L"BlablerInsertTagItem";
-  InsertTagItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertTagItem));
-  TPluginAction InsertNickItem;
-  ZeroMemory(&InsertNickItem,sizeof(TPluginAction));
-  InsertNickItem.cbSize = sizeof(TPluginAction);
-  InsertNickItem.pszName = L"BlablerInsertNickItem";
-  InsertNickItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertNickItem));
-  TPluginAction SendMsgItem;
-  ZeroMemory(&SendMsgItem,sizeof(TPluginAction));
-  SendMsgItem.cbSize = sizeof(TPluginAction);
-  SendMsgItem.pszName = L"BlablerSendMsgItem";
-  SendMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendMsgItem));
-  TPluginAction SendPrivMsgItem;
-  ZeroMemory(&SendPrivMsgItem,sizeof(TPluginAction));
-  SendPrivMsgItem.cbSize = sizeof(TPluginAction);
-  SendPrivMsgItem.pszName = L"BlablerSendPrivMsgItem";
-  SendPrivMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendPrivMsgItem));
-  TPluginAction SeparatorItem;
-  ZeroMemory(&SeparatorItem,sizeof(TPluginAction));
-  SeparatorItem.cbSize = sizeof(TPluginAction);
-  SeparatorItem.pszName = L"BlablerSeparatorItem";
-  SeparatorItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SeparatorItem));
+  DestroyQuoteMsgItem();
+  DestroyInsertTagItem();
+  DestroyLikeMsgItem();
+  DestroyInsertNickItem();
+  DestroySendMsgItem();
+  DestroySendPrivMsgItem();
+  DestroyWatchUserItem();
+  DestroyWatchTagItem();
+  DestroySeparatorItem();
   //Kasowanie zapamietanych danych
   ItemCopyData = "";
   //Jezeli zezwolono na sprawdzanie danych
@@ -1615,27 +2054,14 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 	if((CopyData.Pos("http://blabler.pl/s/")==1)
 	||(CopyData.Pos("http://blabler.pl/dm/")==1))
 	{
-      //Kopiowanie URL
+	  //Kopiowanie URL
 	  ItemCopyData = CopyData;
 	  //Tworzenie separatora
-	  SeparatorItem.cbSize = sizeof(TPluginAction);
-	  SeparatorItem.pszName = L"BlablerSeparatorItem";
-	  SeparatorItem.pszCaption = L"-";
-	  SeparatorItem.Position = 0;
-	  SeparatorItem.IconIndex = 0;
-	  SeparatorItem.pszPopupName = L"popURL";
-	  SeparatorItem.Handle = (int)hFrmSend;
-	  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SeparatorItem));
+	  BuildSeparatorItem();
+	  //Tworzenie elementu lajkowania
+	  BuildLikeMsgItem();
 	  //Tworzenie elementu cytowania
-	  QuoteMsgItem.cbSize = sizeof(TPluginAction);
-	  QuoteMsgItem.pszName = L"BlablerQuoteMsgItem";
-	  QuoteMsgItem.pszCaption = L"Cytuj";
-	  QuoteMsgItem.Position = 0;
-	  QuoteMsgItem.IconIndex = 8;
-	  QuoteMsgItem.pszService = L"sBlablerInsertItem";
-	  QuoteMsgItem.pszPopupName = L"popURL";
-	  QuoteMsgItem.Handle = (int)hFrmSend;
-	  PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&QuoteMsgItem));
+	  BuildQuoteMsgItem();
 	}
 	//Tagi
 	else if(CopyData.Pos("http://blabler.pl/tag/")==1)
@@ -1648,24 +2074,11 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 		//Kopiowanie tag'u
 		ItemCopyData = "#" + CopyData;
 		//Tworzenie separatora
-		SeparatorItem.cbSize = sizeof(TPluginAction);
-		SeparatorItem.pszName = L"BlablerSeparatorItem";
-		SeparatorItem.pszCaption = L"-";
-		SeparatorItem.Position = 0;
-		SeparatorItem.IconIndex = 0;
-		SeparatorItem.pszPopupName = L"popURL";
-		SeparatorItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SeparatorItem));
+		BuildSeparatorItem();
+		//Tworzenie elementu obserwowania tagu
+		BuildWatchTagItem();
 		//Tworzenie elementu wstawiania tagu
-		InsertTagItem.cbSize = sizeof(TPluginAction);
-		InsertTagItem.pszName = L"BlablerInsertTagItem";
-		InsertTagItem.pszCaption = ("Wstaw " + ItemCopyData).w_str();
-		InsertTagItem.Position = 0;
-		InsertTagItem.IconIndex = 11;
-		InsertTagItem.pszService = L"sBlablerInsertItem";
-		InsertTagItem.pszPopupName = L"popURL";
-		InsertTagItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&InsertTagItem));
+		BuildInsertTagItem();
 	  }
 	}
 	//Uzytkownicy
@@ -1679,50 +2092,15 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 		//Kopiowanie nick'a
 		ItemCopyData = CopyData;
 		//Tworzenie separatora
-		SeparatorItem.cbSize = sizeof(TPluginAction);
-		SeparatorItem.pszName = L"BlablerSeparatorItem";
-		SeparatorItem.pszCaption = L"-";
-		SeparatorItem.Position = 0;
-		SeparatorItem.IconIndex = 0;
-		SeparatorItem.pszPopupName = L"popURL";
-		SeparatorItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SeparatorItem));
+		BuildSeparatorItem();
+        //Tworzenie elementu obserowania uzytkownika
+		BuildWatchUserItem();
 		//Tworzenie elementu wstawiania nicku
-		TPluginAction InsertNickItem;
-  		ZeroMemory(&InsertNickItem,sizeof(TPluginAction));
-		InsertNickItem.cbSize = sizeof(TPluginAction);
-		InsertNickItem.pszName = L"BlablerInsertNickItem";
-		InsertNickItem.pszCaption = ("Wstaw ^" + ItemCopyData).w_str();
-		InsertNickItem.Position = 0;
-		InsertNickItem.IconIndex = 11;
-		InsertNickItem.pszService = L"sBlablerInsertNickItem";
-		InsertNickItem.pszPopupName = L"popURL";
-		InsertNickItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&InsertNickItem));
+		BuildInsertNickItem();
 		//Tworzenie elementu wysylania prywatnej wiadomosci
-		TPluginAction SendPrivMsgItem;
-		ZeroMemory(&SendPrivMsgItem,sizeof(TPluginAction));
-		SendPrivMsgItem.cbSize = sizeof(TPluginAction);
-		SendPrivMsgItem.pszName = L"BlablerSendPrivMsgItem";
-		SendPrivMsgItem.pszCaption = L"Wiadomoœæ prywatna";
-		SendPrivMsgItem.Position = 0;
-		SendPrivMsgItem.IconIndex = 8;
-		SendPrivMsgItem.pszService = L"sBlablerSendPrivMsgItem";
-		SendPrivMsgItem.pszPopupName = L"popURL";
-		SendPrivMsgItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SendPrivMsgItem));
+		BuildSendPrivMsgItem();
 		//Tworzenie elementu wysylania wiadomosci
-		TPluginAction SendMsgItem;
-		ZeroMemory(&SendMsgItem,sizeof(TPluginAction));
-		SendMsgItem.cbSize = sizeof(TPluginAction);
-		SendMsgItem.pszName = L"BlablerSendMsgItem";
-		SendMsgItem.pszCaption = L"Wiadomoœæ";
-		SendMsgItem.Position = 0;
-		SendMsgItem.IconIndex = 8;
-		SendMsgItem.pszService = L"sBlablerSendMsgItem";
-		SendMsgItem.pszPopupName = L"popURL";
-		SendMsgItem.Handle = (int)hFrmSend;
-		PluginLink.CallService(AQQ_CONTROLS_CREATEPOPUPMENUITEM,0,(LPARAM)(&SendMsgItem));
+		BuildSendMsgItem();
 	  }
 	}
   }
@@ -1731,7 +2109,7 @@ int __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 }
 //---------------------------------------------------------------------------
 
-int __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
 {
   //Pobranie uchwytu do okna rozmowy
   if(!hFrmSend) hFrmSend = (HWND)wParam;
@@ -1746,6 +2124,10 @@ int __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
   {
 	//"Wlaczenie" procki zbierajacej adresu URL
 	BlockPerformCopyData = false;
+	//Zapamietanie danych kontatku
+	BotJID = (wchar_t*)PrimaryTabContact.JID;
+	BotRes = (wchar_t*)PrimaryTabContact.Resource;
+	BotUsrIdx = PrimaryTabContact.UserIdx;
   }
   else
   {
@@ -1758,7 +2140,7 @@ int __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Hook na zmiane kompozycji (pobranie stylu zalacznikow oraz zmiana skorkowania wtyczki)
-int __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
 {
   //Okno ustawien zostalo juz stworzone
   if(hBlablerForm)
@@ -1810,7 +2192,7 @@ int __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Hook na odbieranie pakietow XML
-int __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
+INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 {
   //Pobranie informacji nt. pakietu XML
   TPluginXMLChunk XMLChunk = *(PPluginXMLChunk)lParam ;
@@ -1974,7 +2356,7 @@ void LoadSettings()
 }
 //---------------------------------------------------------------------------
 
-extern "C" int __declspec(dllexport) __stdcall Load(PPluginLink Link)
+extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
 {
   //Linkowanie wtyczki z komunikatorem
   PluginLink = *Link;
@@ -2010,12 +2392,18 @@ extern "C" int __declspec(dllexport) __stdcall Load(PPluginLink Link)
   PluginLink.CreateServiceFunction(L"sBlablerFastSettingsItem",ServiceBlablerFastSettingsItem);
   //Serwis do wstawiania danego tekstu
   PluginLink.CreateServiceFunction(L"sBlablerInsertItem",ServiceInsertItem);
+  //Serwis do lajkowania wiadomosci
+  PluginLink.CreateServiceFunction(L"sBlablerLikeMsgItem",ServiceLikeMsgItem);
   //Serwis do wstawiania nicku
   PluginLink.CreateServiceFunction(L"sBlablerInsertNickItem",ServiceInsertNickItem);
   //Serwis do wysylania wiadomosci prywatnej
   PluginLink.CreateServiceFunction(L"sBlablerSendMsgItem",ServiceSendMsgItem);
   //Serwis do wysylania wiadomosci prywatnej
   PluginLink.CreateServiceFunction(L"sBlablerSendPrivMsgItem",ServiceSendPrivMsgItem);
+  //Serwis do obserowania uzytownika
+  PluginLink.CreateServiceFunction(L"sBlablerWatchUserItem",ServiceWatchUserItem);
+  //Serwis do obserowania tagu
+  PluginLink.CreateServiceFunction(L"sBlablerWatchTagItem",ServiceWatchTagItem);
   //Tworzenie interfejsu szybkiego dostepu do ustawien wtyczki
   BuildBlablerFastSettings();
   //Definiowanie User-Agent dla polaczen HTTP
@@ -2055,7 +2443,7 @@ extern "C" int __declspec(dllexport) __stdcall Load(PPluginLink Link)
 }
 //---------------------------------------------------------------------------
 
-extern "C" int __declspec(dllexport) __stdcall Unload()
+extern "C" INT_PTR __declspec(dllexport) __stdcall Unload()
 {
   //Anty "Abnormal program termination"
   hBlablerForm->aForceDisconnect->Execute();
@@ -2068,60 +2456,30 @@ extern "C" int __declspec(dllexport) __stdcall Unload()
   PluginLink.UnhookEvent(OnThemeChanged);
   PluginLink.UnhookEvent(OnXMLDebug);
   //Usuwanie elementow z interfejsu AQQ
-  TPluginAction FastSettingsItem;
-  ZeroMemory(&FastSettingsItem,sizeof(TPluginAction));
-  FastSettingsItem.cbSize = sizeof(TPluginAction);
-  FastSettingsItem.pszName = L"BlablerFastSettingsItemButton";
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM,0,(LPARAM)(&FastSettingsItem));
-  TPluginAction QuoteMsgItem;
-  ZeroMemory(&QuoteMsgItem,sizeof(TPluginAction));
-  QuoteMsgItem.cbSize = sizeof(TPluginAction);
-  QuoteMsgItem.pszName = L"BlablerQuoteMsgItem";
-  QuoteMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&QuoteMsgItem));
-  TPluginAction InsertTagItem;
-  ZeroMemory(&InsertTagItem,sizeof(TPluginAction));
-  InsertTagItem.cbSize = sizeof(TPluginAction);
-  InsertTagItem.pszName = L"BlablerInsertTagItem";
-  InsertTagItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertTagItem));
-  TPluginAction InsertNickItem;
-  ZeroMemory(&InsertNickItem,sizeof(TPluginAction));
-  InsertNickItem.cbSize = sizeof(TPluginAction);
-  InsertNickItem.pszName = L"BlablerInsertNickItem";
-  InsertNickItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&InsertNickItem));
-  TPluginAction SendMsgItem;
-  ZeroMemory(&SendMsgItem,sizeof(TPluginAction));
-  SendMsgItem.cbSize = sizeof(TPluginAction);
-  SendMsgItem.pszName = L"BlablerSendMsgItem";
-  SendMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendMsgItem));
-  TPluginAction SendPrivMsgItem;
-  ZeroMemory(&SendPrivMsgItem,sizeof(TPluginAction));
-  SendPrivMsgItem.cbSize = sizeof(TPluginAction);
-  SendPrivMsgItem.pszName = L"BlablerSendPrivMsgItem";
-  SendPrivMsgItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SendPrivMsgItem));
-  TPluginAction SeparatorItem;
-  ZeroMemory(&SeparatorItem,sizeof(TPluginAction));
-  SeparatorItem.cbSize = sizeof(TPluginAction);
-  SeparatorItem.pszName = L"BlablerSeparatorItem";
-  SeparatorItem.Handle = (int)hFrmSend;
-  PluginLink.CallService(AQQ_CONTROLS_DESTROYPOPUPMENUITEM ,0,(LPARAM)(&SeparatorItem));
+  DestroyBlablerFastSettings();
+  DestroyQuoteMsgItem();
+  DestroyInsertTagItem();
+  DestroyLikeMsgItem();
+  DestroyInsertNickItem();
+  DestroySendMsgItem();
+  DestroySendPrivMsgItem();
+  DestroySeparatorItem();
   //Usuwanie serwisow
   PluginLink.DestroyServiceFunction(ServiceBlablerFastSettingsItem);
   PluginLink.DestroyServiceFunction(ServiceInsertItem);
+  PluginLink.DestroyServiceFunction(ServiceLikeMsgItem);
   PluginLink.DestroyServiceFunction(ServiceInsertNickItem);
   PluginLink.DestroyServiceFunction(ServiceSendMsgItem);
   PluginLink.DestroyServiceFunction(ServiceSendPrivMsgItem);
+  PluginLink.DestroyServiceFunction(ServiceWatchUserItem);
+  PluginLink.DestroyServiceFunction(ServiceWatchTagItem);
 
   return 0;
 }
 //---------------------------------------------------------------------------
 
 //Ustawienia wtyczki
-extern "C" int __declspec(dllexport)__stdcall Settings()
+extern "C" INT_PTR __declspec(dllexport)__stdcall Settings()
 {
   //Otwarcie okna ustawien
   OpenSettingsForm();
@@ -2135,7 +2493,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,1,2,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,0,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";

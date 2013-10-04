@@ -470,13 +470,18 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 	//Pobieranie listy plikow
 	FileListBox->Directory = "";
 	FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
-	//Ignoowanie plikow *.tmp
+	//Ignorowanie plikow *.tmp i plikow ze spacja (np. konflikty stworzone przez Dropbox'a)
 	for(int Count=0;Count<FileListBox->Items->Count;Count++)
 	{
 	  if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
 	  {
 		DeleteFile(FileListBox->Items->Strings[Count]);
-		FileListBox->Items->Strings[Count] ="TMP_DELETE";
+		FileListBox->Items->Strings[Count] = "TMP_DELETE";
+	  }
+	  else if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(" ")>0)
+	  {
+		DeleteFile(FileListBox->Items->Strings[Count]);
+		FileListBox->Items->Strings[Count] = "TMP_DELETE";
 	  }
 	}
 	while(FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
