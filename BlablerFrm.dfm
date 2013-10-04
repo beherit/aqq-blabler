@@ -169,6 +169,8 @@ object BlablerForm: TBlablerForm
     Top = 300
     Width = 75
     Height = 25
+    Align = alCustom
+    Anchors = [akRight, akBottom]
     Caption = 'Zastosuj'
     Enabled = False
     TabOrder = 0
@@ -180,6 +182,8 @@ object BlablerForm: TBlablerForm
     Top = 300
     Width = 75
     Height = 25
+    Align = alCustom
+    Anchors = [akRight, akBottom]
     Caption = 'Anuluj'
     TabOrder = 1
     OnClick = aExitExecute
@@ -190,6 +194,8 @@ object BlablerForm: TBlablerForm
     Top = 300
     Width = 75
     Height = 25
+    Align = alCustom
+    Anchors = [akRight, akBottom]
     Caption = 'OK'
     TabOrder = 2
     OnClick = OKButtonClick
@@ -359,7 +365,6 @@ object BlablerForm: TBlablerForm
           Top = 74
           Width = 115
           Height = 25
-          FileType = [ftReadOnly, ftHidden, ftSystem, ftArchive, ftNormal]
           ItemHeight = 13
           TabOrder = 2
           Visible = False
@@ -967,6 +972,7 @@ object BlablerForm: TBlablerForm
     ThirdParty.ThirdScrollControl = ' '
     ThirdParty.ThirdUpDown = ' '
     ThirdParty.ThirdScrollBar = ' '
+    ThirdParty.ThirdStaticText = ' '
     Left = 160
     Top = 264
   end
