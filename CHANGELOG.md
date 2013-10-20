@@ -1,3 +1,8 @@
+1.2.1.0
+-----
+* Nowy sposób emulowania załączników.
+* Zmniejszenie rozmiaru wtyczki 64-bitowej poprzez użycie kompresji LZMA.
+
 1.2.0.0
 -----
 * Możliwość polubienia wiadomości (funkcjonalność jeszcze nie działa).

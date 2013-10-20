@@ -477,10 +477,6 @@ bool GetDataFromAPI(UnicodeString URL, UnicodeString ID)
 //Pobranie stylu Attachment & Avatars
 void GetThemeStyle()
 {
-  //Bufer odczytu plikow
-  char FileBuffer[1024];
-  int FileLength;
-  int CurrentLength;
   //Reset stylow
   AttachmentStyle = "";
   AvatarStyle = "";
@@ -490,32 +486,40 @@ void GetThemeStyle()
   UnicodeString ThemeURLW = (wchar_t*)(PluginLink.CallService(AQQ_FUNCTION_GETAPPPATH,0,0));
   ThemeURLW = StringReplace(ThemeURLW, "\\", "\\\\", TReplaceFlags() << rfReplaceAll);
   ThemeURLW = ThemeURLW + "\\\\System\\\\Shared\\\\Themes\\\\Standard";
-  //Pobieranie stylu wiadomosci
-  if(FileExists(ThemeURL + "\\\\Message\\\\In.htm"))
-   hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURL + "\\\\Message\\\\In.htm");
-  else
-   hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURLW + "\\\\Message\\\\In.htm");
-  AttachmentStyle = hBlablerForm->FileMemo->Text;
-  //Formatowanie
-  AttachmentStyle.Delete(1,AttachmentStyle.Pos("CC_TEXT")+6);
-  //Styl zalacznika
+  //Pobieranie stylu zalacznika
   if(FileExists(ThemeURL + "\\\\Message\\\\Attachment.htm"))
    hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURL + "\\\\Message\\\\Attachment.htm");
   else
    hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURLW + "\\\\Message\\\\Attachment.htm");
-  AttachmentStyle = AttachmentStyle + hBlablerForm->FileMemo->Text;
-  //Formatowanie
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_DAYNAME :: CC_TIME", "", TReplaceFlags() << rfReplaceAll);
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_DAYNAME", "", TReplaceFlags() << rfReplaceAll);
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_TIME", "", TReplaceFlags() << rfReplaceAll);
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_SMARTDATE", "", TReplaceFlags() << rfReplaceAll);
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_MSGEDIT", "", TReplaceFlags() << rfReplaceAll);  
-  AttachmentStyle = StringReplace(AttachmentStyle, "CC_AVATAR_PATH", "", TReplaceFlags() << rfReplaceAll);    
-  AttachmentStyle = AttachmentStyle.Trim();
+  //Wyciaganie wlasciwego stylu zalacznika
+  int LinesCount = hBlablerForm->FileMemo->Lines->Count;
+  for(int Count=0;Count<LinesCount;Count++)
+  {
+	if(hBlablerForm->FileMemo->Lines->Strings[Count].Pos("CC_ATTACH_ICON"))
+	{
+	  //Pobranie stylu zalacznika
+	  AttachmentStyle = hBlablerForm->FileMemo->Lines->Strings[Count];
+	  AttachmentStyle = AttachmentStyle.Trim();
+	  //Zakonczenie petli
+	  Count = LinesCount;
+	}
+  }
+  //Brak wczytanego stylu zalacznika z kompozycji - styl domyslny
+  if(AttachmentStyle.IsEmpty())
+   AttachmentStyle = "<SPAN class=\"attach_icon\">CC_ATTACH_ICON</SPAN><SPAN id=\"attach_caption\">CC_ATTACH_CAPTION</SPAN>: <SPAN class=\"attach_short\">CC_ATTACH_SHORT</SPAN>";
+  //Usuwanie zbednego formatowana ze stylu
+  else if(AttachmentStyle.LowerCase().Pos("<div")==1)
+  {
+	AttachmentStyle.Delete(1,AttachmentStyle.Pos(">"));
+	AttachmentStyle.Delete(AttachmentStyle.LowerCase().Pos("</div>"),AttachmentStyle.Length());
+	AttachmentStyle = AttachmentStyle.Trim();
+  }
+  //Dodawanie odstepu do stylu zalacznika
+  AttachmentStyle = "<div style=\"padding-top:5px;\">"+AttachmentStyle+"</div>";
   //Pobieranie stylu awatarow
   if(FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm"))
   {
-    //Pobieranie danych z pliku
+	//Pobieranie danych z pliku
 	hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm");
 	AvatarStyle = hBlablerForm->FileMemo->Text;
 	AvatarStyle = AvatarStyle.Trim();
@@ -2493,7 +2497,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,0,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,1,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";
