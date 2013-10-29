@@ -1,3 +1,8 @@
+1.2.2.0
+-----
+* Obsługa nowego JID bota Blablera.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (8.48).
+
 1.2.1.0
 -----
 * Nowy sposób emulowania załączników.

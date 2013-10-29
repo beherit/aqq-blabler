@@ -1243,7 +1243,7 @@ INT_PTR __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam)
   //Pobieranie identyfikatora kontatku
   UnicodeString ContactJID = (wchar_t*)ActiveTabContact.JID;
   //Kontakt jest botem Blabler
-  if((ContactJID=="blabler.k2t.eu")||(ContactJID.Pos("48263287@plugin.gg")==1))
+  if((ContactJID=="blabler.k2t.eu")||(ContactJID=="blabler@blabler.pl")||(ContactJID.Pos("48263287@plugin.gg")==1))
   {
 	//"Wlaczenie" procki zbierajacej adresu URL
 	BlockPerformCopyData = false;
@@ -1270,7 +1270,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
   //Pobieranie identyfikatora kontatku
   UnicodeString ContactJID = (wchar_t*)AddLineContact.JID;
   //Kontakt jest botem Blabler
-  if((ContactJID=="blabler.k2t.eu")||(ContactJID.Pos("48263287@plugin.gg")==1))
+  if((ContactJID=="blabler.k2t.eu")||(ContactJID=="blabler@blabler.pl")||(ContactJID.Pos("48263287@plugin.gg")==1))
   {
 	//Nadawca i odbiorca wiadomosci
 	UnicodeString BlablerSender = "";
@@ -2124,7 +2124,7 @@ INT_PTR __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
   //Pobieranie identyfikatora kontatku
   UnicodeString ContactJID = (wchar_t*)PrimaryTabContact.JID;
   //Kontakt jest botem Blabler
-  if((ContactJID=="blabler.k2t.eu")||(ContactJID.Pos("48263287@plugin.gg")==1))
+  if((ContactJID=="blabler.k2t.eu")||(ContactJID=="blabler@blabler.pl")||(ContactJID.Pos("48263287@plugin.gg")==1))
   {
 	//"Wlaczenie" procki zbierajacej adresu URL
 	BlockPerformCopyData = false;
@@ -2203,7 +2203,7 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
   //Pobranie nadawcy pakietu XML
   UnicodeString XMLSender = (wchar_t*)XMLChunk.From;
   //Pakiet wyslany od bota Blablera
-  if(XMLSender=="blabler.k2t.eu")
+  if((XMLSender=="blabler.k2t.eu")||(XMLSender=="blabler@blabler.pl"))
   {
 	//Zmienna ID wiadomosci
 	UnicodeString MsgID;
@@ -2497,7 +2497,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,1,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,2,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";
