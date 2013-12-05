@@ -410,6 +410,30 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 }
 //---------------------------------------------------------------------------
 
+//Konwersja tekstu na liczbe
+int Convert(UnicodeString Char)
+{
+  for(int IntChar=-113;IntChar<=255;IntChar++)
+  {
+	if(Char==CHAR(IntChar))
+	 return IntChar;
+  }
+  return 0;
+}
+//---------------------------------------------------------------------------
+UnicodeString ConvertToInt(UnicodeString Text)
+{
+  UnicodeString ConvertedText;
+  for(int Count=1;Count<=Text.Length();Count++)
+  {
+	UnicodeString tmpStr = Text.SubString(Count, 1);
+	int tmpInt = Convert(tmpStr);
+	ConvertedText = ConvertedText + IntToStr(tmpInt);
+  }
+  return ConvertedText;
+}
+//---------------------------------------------------------------------------
+
 //Pobieranie danych przez API
 bool GetDataFromAPI(UnicodeString URL, UnicodeString ID)
 {
@@ -1512,17 +1536,17 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 	  //Szukanie obrazka w cache
 	  TIniFile *Ini = new TIniFile(CacheDir);
-	  UnicodeString PhotoURL = Ini->ReadString(ID,"Attachment","");
+	  UnicodeString PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
 	  delete Ini;
 	  //Adres obrazka nie zapisany w cache
 	  if(PhotoURL.IsEmpty())
 	  {
 		//Pobieranie danych przez API
-		if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+		if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
 		{
 		  //Ponowne szukanie obrazka w cache
 		  TIniFile *Ini = new TIniFile(CacheDir);
-		  PhotoURL = Ini->ReadString(ID,"Attachment","");
+		  PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
 		  delete Ini;
 		}
 	  }
@@ -1752,19 +1776,19 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-			UnicodeString From = Ini->ReadString(ID,"From","");
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
 			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
 			{
 			  //Pobieranie danych przez API
-			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-				From = Ini->ReadString(ID,"From","");
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
 			}
@@ -1793,19 +1817,19 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-			UnicodeString From = Ini->ReadString(ID,"From","");
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
 			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
 			{
 			  //Pobieranie danych przez API
-			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-				From = Ini->ReadString(ID,"From","");
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
 			}
@@ -1923,19 +1947,19 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-			UnicodeString From = Ini->ReadString(ID,"From","");
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
 			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
 			{
 			  //Pobieranie danych przez API
-			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-				From = Ini->ReadString(ID,"From","");
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
 			}
@@ -1963,19 +1987,19 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-			UnicodeString From = Ini->ReadString(ID,"From","");
+			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
 			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
 			{
 			  //Pobieranie danych przez API
-			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ID))
+			  if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ID,"Body","")));
-				From = Ini->ReadString(ID,"From","");
+				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
 			}
@@ -2245,8 +2269,8 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 			  //Zapisywanie informacji do cache
 			  TIniFile *Ini = new TIniFile(CacheDir);
 			  ShortString TextShort = UTF8EncodeToShortString(Text);
-			  Ini->WriteString(ID,"Body",StrToIniStr(TextShort.operator AnsiString()));
-			  Ini->WriteString(ID,"From",From);
+			  Ini->WriteString(ConvertToInt(ID),"Body",StrToIniStr(TextShort.operator AnsiString()));
+			  Ini->WriteString(ConvertToInt(ID),"From",From);
 			  delete Ini;
 			}
 		  }
@@ -2264,7 +2288,7 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 			  UnicodeString URL = ChildNode->GetText();
 			  //Zapisywanie informacji do cache
 			  TIniFile *Ini = new TIniFile(CacheDir);
-			  Ini->WriteString(MsgID,"Attachment",URL);
+			  Ini->WriteString(ConvertToInt(MsgID),"Attachment",URL);
 			  delete Ini;
 			}
 		  }
@@ -2497,7 +2521,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,2,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,3,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";
