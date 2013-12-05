@@ -1,3 +1,8 @@
+1.2.3.0
+-----
+* Poprawne zapisywanie wiadomości do pliku cache.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (8.51).
+
 1.2.2.0
 -----
 * Obsługa nowego JID bota Blablera.
