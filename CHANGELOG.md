@@ -1,3 +1,8 @@
+1.2.4.0
+-----
+* Możliwość odlajkowania polubionego wcześniej statusu.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (8.52).
+
 1.2.3.0
 -----
 * Poprawne zapisywanie wiadomości do pliku cache.

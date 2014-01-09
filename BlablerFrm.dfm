@@ -220,6 +220,10 @@ object BlablerForm: TBlablerForm
       Caption = 'Awatary'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object AvatarsSizeGroupBox: TsGroupBox
         Left = 7
         Top = 3
@@ -406,6 +410,7 @@ object BlablerForm: TBlablerForm
           BoundLabel.MaxWidth = 0
           BoundLabel.UseSkinColor = True
           SkinData.SkinSection = 'COMBOBOX'
+          VerticalAlignment = taAlignTop
           Style = csDropDownList
           Font.Charset = EASTEUROPE_CHARSET
           Font.Color = clWindowText
@@ -543,6 +548,10 @@ object BlablerForm: TBlablerForm
       Caption = 'Wyr'#243#380'nianie'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object EraseHighlightMsgSpeedButton: TsSpeedButton
         Left = 17
         Top = 154
@@ -844,6 +853,7 @@ object BlablerForm: TBlablerForm
         BoundLabel.MaxWidth = 0
         BoundLabel.UseSkinColor = True
         SkinData.SkinSection = 'COMBOBOX'
+        VerticalAlignment = taAlignTop
         Style = csOwnerDrawFixed
         ItemIndex = 0
         TabOrder = 4
