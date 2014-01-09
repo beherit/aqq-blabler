@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-// Copyright (C) 2013 Krzysztof Grochocki
+// Copyright (C) 2013-2014 Krzysztof Grochocki
 //
 // This file is part of Blabler
 //
@@ -857,13 +857,20 @@ void DestroyLikeMsgItem()
 //Tworzenie elementu lajkowania
 void BuildLikeMsgItem()
 {
+  //Pobieranie informacji o zalajkowaniu wiadomosci
+  TIniFile *Ini = new TIniFile(CacheDir);
+  bool Like = Ini->ReadBool("Loves",ItemCopyData,false);
+  delete Ini;
+  //Tworzenie elementu
   TPluginAction LikeMsgItem;
   ZeroMemory(&LikeMsgItem,sizeof(TPluginAction));
   LikeMsgItem.cbSize = sizeof(TPluginAction);
   LikeMsgItem.pszName = L"BlablerLikeMsgItem";
-  LikeMsgItem.pszCaption = L"Polub";
+  if(Like) LikeMsgItem.pszCaption = L"Przestañ lubiæ";
+  else LikeMsgItem.pszCaption = L"Polub";
   LikeMsgItem.Position = 0;
-  LikeMsgItem.IconIndex = 157;
+  if(Like) LikeMsgItem.IconIndex = 158;
+  else LikeMsgItem.IconIndex = 157;
   LikeMsgItem.pszService = L"sBlablerLikeMsgItem";
   LikeMsgItem.pszPopupName = L"popURL";
   LikeMsgItem.Handle = (int)hFrmSend;
@@ -1082,6 +1089,10 @@ INT_PTR __stdcall ServiceInsertItem(WPARAM wParam, LPARAM lParam)
 //Serwis do lajkowania wiadomosci
 INT_PTR __stdcall ServiceLikeMsgItem(WPARAM wParam, LPARAM lParam)
 {
+  //Pobieranie informacji o zalajkowaniu wiadomosci
+  TIniFile *Ini = new TIniFile(CacheDir);
+  bool Like = Ini->ReadBool("Loves",ItemCopyData,false);
+  delete Ini;
   //Struktura kontaktu
   TPluginContact PluginContact;
   ZeroMemory(&PluginContact,sizeof(TPluginContact));
@@ -1094,11 +1105,18 @@ INT_PTR __stdcall ServiceLikeMsgItem(WPARAM wParam, LPARAM lParam)
   ZeroMemory(&PluginMessage,sizeof(TPluginMessage));
   PluginMessage.cbSize = sizeof(TPluginMessage);
   PluginMessage.JID = BotJID.w_str();
-  PluginMessage.Body = ("!ilove " + ItemCopyData).w_str();
+  if(Like) PluginMessage.Body = ("!idontlove " + ItemCopyData).w_str();
+  else PluginMessage.Body = ("!ilove " + ItemCopyData).w_str();
   PluginMessage.Store = true;
   PluginMessage.ShowAsOutgoing = true;
   //Wysylanie wiadomosci
-  PluginLink.CallService(AQQ_CONTACTS_SENDMSG ,(WPARAM)(&PluginContact),(LPARAM)(&PluginMessage));
+  if(PluginLink.CallService(AQQ_CONTACTS_SENDMSG ,(WPARAM)(&PluginContact),(LPARAM)(&PluginMessage)))
+  {
+    //Zapisywanie informacji o zalajkowaniu wiadomosci
+	TIniFile *Ini = new TIniFile(CacheDir);
+	Ini->WriteBool("Loves",ItemCopyData,!Like);
+	delete Ini;
+  }
 
   return 0;
 }
@@ -2521,7 +2539,7 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 {
   PluginInfo.cbSize = sizeof(TPluginInfo);
   PluginInfo.ShortName = L"Blabler";
-  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,3,0);
+  PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,4,0);
   PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
   PluginInfo.Author = L"Krzysztof Grochocki (Beherit)";
   PluginInfo.AuthorMail = L"kontakt@beherit.pl";
