@@ -40,6 +40,7 @@
 #include "sSkinProvider.hpp"
 #include "sSpeedButton.hpp"
 #include "sSpinEdit.hpp"
+#include <IdAntiFreezeBase.hpp>
 #include <IdBaseComponent.hpp>
 #include <IdComponent.hpp>
 #include <IdHTTP.hpp>
@@ -54,9 +55,8 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.ExtCtrls.hpp>
 #include <Vcl.FileCtrl.hpp>
-#include <Vcl.StdCtrls.hpp>
-#include <IdAntiFreezeBase.hpp>
 #include <Vcl.IdAntiFreeze.hpp>
+#include <Vcl.StdCtrls.hpp>
 //---------------------------------------------------------------------------
 class TBlablerForm : public TForm
 {
