@@ -57,6 +57,8 @@
 #include <Vcl.FileCtrl.hpp>
 #include <Vcl.IdAntiFreeze.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include <System.Win.TaskbarCore.hpp>
+#include <Vcl.Taskbar.hpp>
 //---------------------------------------------------------------------------
 class TBlablerForm : public TForm
 {
@@ -118,6 +120,7 @@ __published:	// IDE-managed Components
 	TIdThreadComponent *GetAvatarsThread;
 	TIdHTTP *IdHTTP;
 	TIdAntiFreeze *IdAntiFreeze;
+	TTaskbar *Taskbar;
 	void __fastcall SaveButtonClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall aLoadSettingsExecute(TObject *Sender);

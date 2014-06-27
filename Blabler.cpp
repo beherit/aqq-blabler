@@ -658,6 +658,9 @@ void AutoAvatarsUpdate()
 	  hBlablerForm->ProgressBar->Visible = true;
 	  hBlablerForm->ProgressLabel->Caption = "Pobieranie danych...";
 	  hBlablerForm->ProgressLabel->Visible = true;
+	  //Wlaczenie paska postepu na taskbarze
+	  hBlablerForm->Taskbar->ProgressValue = 0;
+	  hBlablerForm->Taskbar->ProgressState = TTaskBarProgressState::Normal;
 	  //Pobieranie listy plikow
 	  hBlablerForm->FileListBox->Directory = "";
 	  hBlablerForm->FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
@@ -679,6 +682,8 @@ void AutoAvatarsUpdate()
 	   hBlablerForm->FileListBox->Items->Delete(hBlablerForm->FileListBox->Items->IndexOf("TMP_DELETE"));
 	  //Ustawianie maksymalnego paska postepu
 	  hBlablerForm->ProgressBar->Max = hBlablerForm->FileListBox->Items->Count;
+	  //Ustawianie maksymalnego paska postepu na taskbarze
+	  hBlablerForm->Taskbar->ProgressMaxValue = hBlablerForm->FileListBox->Items->Count;
 	  //Wlacznie aktualizacji
 	  hBlablerForm->AutoAvatarsUpdateThread->Start();
 	}

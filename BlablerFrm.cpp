@@ -48,8 +48,6 @@
 #pragma resource "*.dfm"
 TBlablerForm *BlablerForm;
 //---------------------------------------------------------------------------
-typedef TComInterface<ITaskbarList3, &IID_ITaskbarList3> ITaskbarListPtr;
-ITaskbarListPtr FTaskbarList;
 __declspec(dllimport)UnicodeString GetPluginUserDir();
 __declspec(dllimport)UnicodeString GetPluginUserDirW();
 __declspec(dllimport)UnicodeString GetThemeSkinDir();
@@ -461,8 +459,8 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 	ProgressLabel->Caption = "Pobieranie danych...";
 	ProgressLabel->Visible = true;
 	//Wlaczenie paska postepu na taskbarze
-	if((!FTaskbarList)&&(SUCCEEDED(FTaskbarList.CreateInstance(CLSID_TaskbarList, 0))))
-	 FTaskbarList->HrInit();
+	Taskbar->ProgressValue = 0;
+	Taskbar->ProgressState = TTaskBarProgressState::Normal;
 	//Pobieranie listy plikow
 	FileListBox->Directory = "";
 	FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
@@ -484,6 +482,8 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 	 FileListBox->Items->Delete(FileListBox->Items->IndexOf("TMP_DELETE"));
 	//Ustawianie maksymalnego paska postepu
 	ProgressBar->Max = FileListBox->Items->Count;
+	//Ustawianie maksymalnego paska postepu na taskbarze
+	Taskbar->ProgressMaxValue = FileListBox->Items->Count;
 	//Wlacznie aktualizacji
 	ManualAvatarsUpdateThread->Start();
   }
@@ -711,7 +711,7 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *S
 	 delete MemFile;
 	//Kolejny plik
 	ProgressBar->Position++;
-	if(FTaskbarList) FTaskbarList->SetProgressValue(Handle, ProgressBar->Position, ProgressBar->Max);
+	Taskbar->ProgressValue++;
 	//Wymuszenie wylaczenia
 	if(ForceDisconnect) Count = FileListBox->Items->Count;
   }
@@ -727,8 +727,8 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *S
   //Wylaczenie paska postepu
   ProgressBar->Visible = false;
   ProgressLabel->Visible = false;
-  //Wylaczenie paska postepuna taskbarze
-  if(FTaskbarList) FTaskbarList->SetProgressState(Handle, TBPF_NOPROGRESS);
+  //Wylaczenie paska postepu na taskbarze
+  Taskbar->ProgressState = TTaskBarProgressState::None;
   //Default caption
   ManualAvatarsUpdateButton->Caption ="Sprawdü aktualizacje";
   if(ForceDisconnect)
@@ -782,10 +782,7 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
 	 delete MemFile;
 	//Kolejny plik
 	ProgressBar->Position++;
-	//Wlaczenie paska postepu na taskbarze
-	if((!FTaskbarList)&&(SUCCEEDED(FTaskbarList.CreateInstance(CLSID_TaskbarList, 0))))
-	 FTaskbarList->HrInit();
-	if(FTaskbarList) FTaskbarList->SetProgressValue(Handle, ProgressBar->Position, ProgressBar->Max);
+	Taskbar->ProgressValue++;
 	//Wymuszenie wylaczenia
 	if(ForceDisconnect) Count = FileListBox->Items->Count;
   }
@@ -802,7 +799,7 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
   ProgressBar->Visible = false;
   ProgressLabel->Visible = false;
   //Wylaczenie paska postepuna taskbarze
-  if(FTaskbarList) FTaskbarList->SetProgressState(Handle, TBPF_NOPROGRESS);
+  Taskbar->ProgressState = TTaskBarProgressState::None;
   //Default caption
   ManualAvatarsUpdateButton->Caption ="Sprawdü aktualizacje";
   if(ForceDisconnect)
