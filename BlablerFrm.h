@@ -158,6 +158,7 @@ __published:	// IDE-managed Components
 	void __fastcall AvatarsIdHTTPTimerTimer(TObject *Sender);
 	void __fastcall GetAvatarsThreadRun(TIdThreadComponent *Sender);
 	void __fastcall ColorHighlightMsgEditChange(TObject *Sender);
+	void __fastcall sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning);
 private:	// User declarations
 public:		// User declarations
 	bool IdHTTPManualDisconnected;

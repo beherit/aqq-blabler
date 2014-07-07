@@ -930,3 +930,10 @@ void __fastcall TBlablerForm::ColorHighlightMsgEditChange(TObject *Sender)
   }
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TBlablerForm::sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning)
+{
+  AllowSkinning = false;
+}
+//---------------------------------------------------------------------------
+

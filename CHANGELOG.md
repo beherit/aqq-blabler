@@ -1,3 +1,9 @@
+1.2.5.0
+-----
+* Optymalizacja pokazywania postępu aktualizacji awatarów na taskbarze.
+* Nieskórkowanie systemowych okien dialogowych niepochodzących z wtyczki.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (9.10).
+
 1.2.4.0
 -----
 * Możliwość odlajkowania polubionego wcześniej statusu.
