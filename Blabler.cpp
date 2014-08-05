@@ -1349,7 +1349,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  TempStr2.Delete(2,TempStr2.Length());
 	  //Jezeli fraza jest tagiem
 	  if((AllowedTagsCharacters(TempStr2))
-	   &&(TempStr.LowerCase().Pos("href=\"link:")==0)
+	   &&(TempStr.LowerCase().Pos("href=\"")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"http://")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"https://")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"www")==0))
@@ -1388,7 +1388,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  }
 	  else Body = StringReplace(Body, "#", "[CC_TAGS]", TReplaceFlags());
 	}
-	Body = StringReplace(Body, "[CC_TAGS_LINK]", "<A HREF=\"link:http://blabler.pl/tag/", TReplaceFlags() << rfReplaceAll);
+	Body = StringReplace(Body, "[CC_TAGS_LINK]", "<A HREF=\"http://aqq-link/?url=http://blabler.pl/tag/", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_TAGS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_TAGS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_TAGS]", "#", TReplaceFlags() << rfReplaceAll);
@@ -1407,7 +1407,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  TempStr2.Delete(2,TempStr2.Length());
 	  //Jezeli fraza jest uzytkownikiem
 	  if((AllowedUsersCharacters(TempStr2))
-	   &&(TempStr.LowerCase().Pos("href=\"link:")==0)
+	   &&(TempStr.LowerCase().Pos("href=\"")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"http://")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"https://")==0)
 	   &&(TempStr.LowerCase().Pos("title=\"www")==0))
@@ -1433,7 +1433,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  }
 	  else Body = StringReplace(Body, "^", "[CC_USERS]", TReplaceFlags());
 	}
-	Body = StringReplace(Body, "[CC_USERS_LINK]", "<A HREF=\"link:http://blabler.pl/u/", TReplaceFlags() << rfReplaceAll);
+	Body = StringReplace(Body, "[CC_USERS_LINK]", "<A HREF=\"http://aqq-link/?url=http://blabler.pl/u/", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_USERS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_USERS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
 	Body = StringReplace(Body, "[CC_USERS]", "^", TReplaceFlags() << rfReplaceAll);
@@ -1449,7 +1449,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  {
 		//Tworzenie odnosnika
 		TempStr.SetLength(TempStr.Length()-1);
-		Body = StringReplace(Body, TempStr + ":", "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>:", TReplaceFlags());
+		Body = StringReplace(Body, TempStr + ":", "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>:", TReplaceFlags());
 		//Zapamietywanie nadawcy wiadomosci
 		BlablerSender = TempStr;
 		//Skip
@@ -1472,14 +1472,14 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		//Tworzenie odnosnika nadawcy wiadomosci
 		TempStr = Body;
 		TempStr.Delete(TempStr.Pos(" &gt;&gt; "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + " &gt;&gt; ", "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt;&gt; ", TReplaceFlags());
+		Body = StringReplace(Body, TempStr + " &gt;&gt; ", "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt;&gt; ", TReplaceFlags());
 		//Zapamietywanie nadawcy wiadomosci
 		BlablerSender = TempStr;
 		//Tworzenie odnosnika odbiorcy wiadomosci
 		TempStr = Body;
 		TempStr.Delete(1,TempStr.Pos(" &gt;&gt; ")+9);
 		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
+		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
 		//Zapamietywanie odbiorcy wiadomosci
 		BlablerReceiver = TempStr;
 	  }
@@ -1494,7 +1494,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	   TempStr.SetLength(TempStr.Length()-1);
 	  TempStr.Delete(1,8);
 	  //Tworzenie odnosnika
-	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
 	}
 	//Tworzenie odnosnika dla nadawcy wiadomosci kierowanej
 	else if((Body.Pos(" &gt; "))
@@ -1512,14 +1512,14 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		//Tworzenie odnosnika nadawcy wiadomosci
 		TempStr = Body;
 		TempStr.Delete(TempStr.Pos(" &gt; "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + " &gt; ", "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt; ", TReplaceFlags());
+		Body = StringReplace(Body, TempStr + " &gt; ", "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt; ", TReplaceFlags());
 		//Zapamietywanie nadawcy wiadomosci
 		BlablerSender = TempStr;
 		//Tworzenie odnosnika odbiorcy wiadomosci
 		TempStr = Body;
 		TempStr.Delete(1,TempStr.Pos(" &gt; ")+5);
 		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
+		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
 		//Zapamietywanie odbiorcy wiadomosci
 		BlablerReceiver = TempStr;
 	  }
@@ -1534,7 +1534,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	   TempStr.SetLength(TempStr.Length()-1);
 	  TempStr.Delete(1,4);
 	  //Tworzenie odnosnika
-	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
 	}
 	//"Wiadomoœæ wys³ana do XXX
 	else if((Body.Pos("Wiadomoœæ wys³ana do ")==1)&&(ContactJID==MessageJID))
@@ -1544,7 +1544,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  TempStr.Delete(1,TempStr.Pos("Wiadomoœæ wys³ana do ")+20);
 	  while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
 	  //Tworzenie odnosnika
-	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"link:http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+	  Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=http://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
 	}
 	//Skip
 	SkipFormatSender: { /* Only Skip */ }
@@ -1554,7 +1554,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	{
 	  //Pobieranie ID wiadomosci
 	  UnicodeString ID = Body;
-	  ID.Delete(1,ID.Pos(" | <A HREF=\"link:")+2);
+	  ID.Delete(1,ID.Pos(" | <A HREF=\"")+2);
 	  ID.Delete(ID.Pos("\">"),ID.Length());
 	  while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 	  //Szukanie obrazka w cache
@@ -1577,7 +1577,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  if(!PhotoURL.IsEmpty())
 	  {
 		//Tworzenie odnosnika dla [FOTO]
-		Body = StringReplace(Body, "[FOTO]", "<A HREF=\"link:" + PhotoURL + "\" title=\"" + PhotoURL + "\">[FOTO]</A>", TReplaceFlags());
+		Body = StringReplace(Body, "[FOTO]", "<A HREF=\"http://aqq-link/?url=" + PhotoURL + "\" title=\"" + PhotoURL + "\">[FOTO]</A>", TReplaceFlags());
 		//Emulacja zalacznika
 		if(!AttachmentStyle.IsEmpty())
 		{
@@ -1901,14 +1901,14 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	  if(!FileExists(AvatarsDir + "\\\\" + BlablerSender))
 	  {
 		//Wstawienie online'owego awatara
-		Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerSender + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+		Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerSender + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 		//Dodanie awatara do pobrania
 		GetAvatarsList->Add(BlablerSender);
 		//Wlaczenie watku
 		if(!hBlablerForm->GetAvatarsThread->Active) hBlablerForm->GetAvatarsThread->Start();
 	  }
 	  //Awatar znajduje sie w folderze cache
-	  else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerSender + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+	  else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=http://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerSender + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 	  //Dodanie awatar(a/ow) do tresci wiadomosci
 	  Body = Avatars + Body;
 	  //Awatar dla odbiorcy wiadomosci
@@ -1918,14 +1918,14 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		if(!FileExists(AvatarsDir + "\\\\" + BlablerReceiver))
 		{
 		  //Wstawienie online'owego awatara
-		  Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerReceiver + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+		  Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerReceiver + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 		  //Dodanie awatara do pobrania
 		  GetAvatarsList->Add(BlablerReceiver);
 		  //Wlaczenie watku
 		  if(!hBlablerForm->GetAvatarsThread->Active) hBlablerForm->GetAvatarsThread->Start();
 		}
 		//Awatar znajduje sie w folderze cache
-		else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"link:http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerReceiver + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+		else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=http://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerReceiver + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
 		//Wstawienie awataru do tresci wiadomosci
 		Body = StringReplace(Body, "&gt; ", "&gt;<span style=\"padding-left: 2px;\"></span>"+Avatars, TReplaceFlags());
 	  }
