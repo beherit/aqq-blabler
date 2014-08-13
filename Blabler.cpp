@@ -539,7 +539,7 @@ void GetThemeStyle()
 	AttachmentStyle = AttachmentStyle.Trim();
   }
   //Dodawanie odstepu do stylu zalacznika
-  AttachmentStyle = "<div style=\"padding-top:5px;\">"+AttachmentStyle+"</div>";
+  AttachmentStyle = "<div style=\"display:block;padding-top:5px;\">"+AttachmentStyle+"</div>";
   //Pobieranie stylu awatarow
   if(FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm"))
   {
