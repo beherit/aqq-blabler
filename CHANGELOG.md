@@ -1,3 +1,9 @@
+1.2.6.0
+-----
+* Drobne poprawki pod kątem AQQ 3.0.
+* Poprawki w odczytywaniu stylu załącznika oraz w dodawanym do niego bloku DIV.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (9.12).
+
 1.2.5.0
 -----
 * Optymalizacja pokazywania postępu aktualizacji awatarów na taskbarze.
