@@ -307,6 +307,11 @@ int GetSaturation()
   return (int)PluginLink.CallService(AQQ_SYSTEM_COLORGETSATURATION,0,0);
 }
 //---------------------------------------------------------------------------
+int GetBrightness()
+{
+  return (int)PluginLink.CallService(AQQ_SYSTEM_COLORGETBRIGHTNESS,0,0);
+}
+//---------------------------------------------------------------------------
 
 //Pobranie stylu labela
 TColor GetWarningColor()
@@ -2098,8 +2103,10 @@ INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
 	//Wlaczona zaawansowana stylizacja okien
 	if(ChkSkinEnabled())
 	{
-	  hBlablerForm->sSkinManager->HueOffset = wParam;
-	  hBlablerForm->sSkinManager->Saturation = lParam;
+	  TPluginColorChange ColorChange = *(PPluginColorChange)wParam;
+	  hBlablerForm->sSkinManager->HueOffset = ColorChange.Hue;
+	  hBlablerForm->sSkinManager->Saturation = ColorChange.Saturation;
+	  hBlablerForm->sSkinManager->Brightness = ColorChange.Brightness;
 	}
   }
 
@@ -2251,6 +2258,7 @@ INT_PTR __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
 		//Zmiana kolorystyki AlphaControls
 		hBlablerForm->sSkinManager->HueOffset = GetHUE();
 	    hBlablerForm->sSkinManager->Saturation = GetSaturation();
+		hBlablerForm->sSkinManager->Brightness = GetBrightness();
 		//Aktywacja skorkowania AlphaControls
 		hBlablerForm->sSkinManager->Active = true;
 	  }
@@ -2502,7 +2510,7 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
   //Hook na pokazywane wiadomosci
   PluginLink.HookEvent(AQQ_CONTACTS_ADDLINE,OnAddLine);
   //Hook na zmiane kolorystyki AlphaControls
-  PluginLink.HookEvent(AQQ_SYSTEM_COLORCHANGE,OnColorChange);
+  PluginLink.HookEvent(AQQ_SYSTEM_COLORCHANGEV2,OnColorChange);
   //Hook na zaladowanie wszystkich modulow w AQQ (autoupdate awatarow)
   PluginLink.HookEvent(AQQ_SYSTEM_MODULESLOADED,OnModulesLoaded);
   //Hook na pobieranie adresow URL z roznych popup

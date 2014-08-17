@@ -57,8 +57,9 @@ __declspec(dllimport)TColor GetWarningColor();
 __declspec(dllimport)bool ChkSkinEnabled();
 __declspec(dllimport)bool ChkThemeAnimateWindows();
 __declspec(dllimport)bool ChkThemeGlowing();
-__declspec(dllimport)int GetSaturation();
 __declspec(dllimport)int GetHUE();
+__declspec(dllimport)int GetSaturation();
+__declspec(dllimport)int GetBrightness();
 __declspec(dllimport)UnicodeString MD5File(UnicodeString FileName);
 __declspec(dllimport)void SetAvatarStyle(UnicodeString Style);
 __declspec(dllimport)bool ChkAvatarsListItem();
@@ -186,6 +187,7 @@ void __fastcall TBlablerForm::FormCreate(TObject *Sender)
 	  //Zmiana kolorystyki AlphaControls
 	  sSkinManager->HueOffset = GetHUE();
 	  sSkinManager->Saturation = GetSaturation();
+	  sSkinManager->Brightness = GetBrightness();
 	  //Aktywacja skorkowania AlphaControls
 	  sSkinManager->Active = true;
 	}
