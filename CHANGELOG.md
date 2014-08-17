@@ -1,3 +1,8 @@
+1.2.7.0
+-----
+* Sprawdzanie aktualizacji awatarów nie działa już tylko przy włączaniu wtyczki.
+* Pełne wsparcie kolorystyki stylizacji okien.
+
 1.2.6.0
 -----
 * Drobne poprawki pod kątem AQQ 3.0.
