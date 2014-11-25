@@ -65,7 +65,7 @@ __declspec(dllimport)void SetAvatarStyle(UnicodeString Style);
 __declspec(dllimport)bool ChkAvatarsListItem();
 __declspec(dllimport)UnicodeString GetAvatarsListItem();
 __declspec(dllimport)void LoadSettings();
-__declspec(dllimport)UnicodeString StrToIniStr(UnicodeString Str);
+__declspec(dllimport)UnicodeString EncodeBase64(UnicodeString Str);
 //---------------------------------------------------------------------------
 bool AnimateMode;
 bool ForceDisconnect = false;
@@ -394,8 +394,7 @@ void __fastcall TBlablerForm::AvatarStyleSaveButtonClick(TObject *Sender)
 {
   //Zapisanie stylu awatarow do pliku
   TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  ShortString pStyle = UTF8EncodeToShortString(AvatarsStyleMemo->Text);
-  Ini->WriteString("Avatars", "Style", StrToIniStr(pStyle.operator AnsiString()));
+  Ini->WriteString("Avatars", "Style64", EncodeBase64(AvatarsStyleMemo->Text));
   delete Ini;
   //Ustawienie stylu w rdzeniu wtyczki
   SetAvatarStyle(AvatarsStyleMemo->Text);
