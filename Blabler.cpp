@@ -143,79 +143,6 @@ void FocusRichEdit()
 }
 //---------------------------------------------------------------------------
 
-//Konwersja ciagu znakow na potrzeby INI
-UnicodeString StrToIniStr(UnicodeString Str)
-{
-  //Definicja zmiennych
-  wchar_t Buffer[50010];
-  wchar_t* B;
-  wchar_t* S;
-  //Przekazywanie ciagu znakow
-  S = Str.w_str();
-  //Ustalanie wskaznika
-  B = Buffer;
-  //Konwersja znakow
-  while(*S!='\0')
-  {
-	switch(*S)
-	{
-	  case 13:
-	  case 10:
-		if((*S==13)&&(S[1]==10)) S++;
-		else if((*S==10)&&(S[1] == 13)) S++;
-		*B = '\\';
-		B++;
-		*B = 'n';
-		B++;
-		S++;
-	  break;
-	  default:
-		*B = *S;
-		B++;
-		S++;
-	  break;
-	}
-  }
-  *B = '\0';
-  //Zwracanie zkonwertowanego ciagu znakow
-  return (wchar_t*)Buffer;
-}
-//---------------------------------------------------------------------------
-UnicodeString IniStrToStr(UnicodeString Str)
-{
-  //Definicja zmiennych
-  wchar_t Buffer[50010];
-  wchar_t* B;
-  wchar_t* S;
-  //Przekazywanie ciagu znakow
-  S = Str.w_str();
-  //Ustalanie wskaznika
-  B = Buffer;
-  //Konwersja znakow
-  while(*S!='\0')
-  {
-	if((S[0]=='\\')&&(S[1]=='n'))
-	{
-	  *B = 13;
-	  B++;
-	  *B = 10;
-	  B++;
-	  S++;
-	  S++;
-	}
-	else
-	{
-	  *B = *S;
-	  B++;
-	  S++;
-	}
-  }
-  *B = '\0';
-  //Zwracanie zkonwertowanego ciagu znakow
-  return (wchar_t*)Buffer;
-}
-//---------------------------------------------------------------------------
-
 //Pobieranie sciezki katalogu prywatnego wtyczek
 UnicodeString GetPluginUserDir()
 {
@@ -2434,7 +2361,7 @@ void LoadSettings()
   TIniFile *Ini = new TIniFile(GetPluginUserDir()+"\\\\Blabler\\\\Settings.ini");
   //Awatary
   AvatarSize = Ini->ReadInteger("Avatars","Size",25);
-  StaticAvatarStyle = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString("Avatars","Style","").Trim().w_str()));
+  StaticAvatarStyle = DecodeBase64(Ini->ReadString("Avatars","Style64","")).Trim();
   if(StaticAvatarStyle=="<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
    StaticAvatarStyle = "";
   //Wyroznianie
