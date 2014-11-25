@@ -1814,7 +1814,8 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	}
 
 	//Zacytowane wiadomosci
-	if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/")))
+	if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/"))
+	||(Body.Pos("https://blabler.pl/s/"))||(Body.Pos("https://blabler.pl/dm/"))||(Body.Pos("https://blabler.pl/pm/")))
 	{
 	  //Dodawanie specjalnych tagow do wszystkich linkow
 	  Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
@@ -1826,7 +1827,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 		URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
 		URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
 		//Zacytowane wiadomosci
-		if(((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/")))&&(Body.Pos(" | [CC_LINK_START]"+URL)==0))
+		if(((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/"))||(URL.Pos("https://blabler.pl/s/"))||(URL.Pos("https://blabler.pl/dm/"))||(URL.Pos("https://blabler.pl/pm/")))&&(Body.Pos(" | [CC_LINK_START]"+URL)==0))
 		{
 		  //Odnosnik z parametrem title
 		  if(URL.Pos("title="))
