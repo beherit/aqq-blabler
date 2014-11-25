@@ -1,3 +1,12 @@
+1.2.8.0
+-----
+* Poprawne pobieranie treści zacytowanych wiadomości w protokole HTTPS.
+* Pokazywanie elementów w popupmenu dla adresów URL w protokole HTTPS.
+* Tworzenie wszystkich odnośników w protokole HTTPS.
+* Kodowanie zacytowanych wiadomości do Base64.
+* Kodowanie stylu awatarów do Base64.
+* Aktualizacja komponentów AlphaControls do nowszej wersji (9.18).
+
 1.2.7.0
 -----
 * Sprawdzanie aktualizacji awatarów nie działa już tylko przy włączaniu wtyczki.
