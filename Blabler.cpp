@@ -2146,8 +2146,8 @@ INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 	//Pobranie danych
 	UnicodeString CopyData = (wchar_t*)lParam;
 	//Cytowanie
-	if((CopyData.Pos("http://blabler.pl/s/")==1)
-	||(CopyData.Pos("http://blabler.pl/dm/")==1))
+	if((CopyData.Pos("http://blabler.pl/s/")==1)||(CopyData.Pos("http://blabler.pl/dm/")==1)
+	||(CopyData.Pos("https://blabler.pl/s/")==1)||(CopyData.Pos("https://blabler.pl/dm/")==1))
 	{
 	  //Kopiowanie URL
 	  ItemCopyData = CopyData;
@@ -2159,7 +2159,7 @@ INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 	  BuildQuoteMsgItem();
 	}
 	//Tagi
-	else if(CopyData.Pos("http://blabler.pl/tag/")==1)
+	else if((CopyData.Pos("http://blabler.pl/tag/")==1)||(CopyData.Pos("https://blabler.pl/tag/")==1))
 	{
 	  //Wyciaganie tag'u
 	  CopyData.Delete(1,CopyData.Pos("/tag/")+4);
@@ -2177,7 +2177,7 @@ INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam)
 	  }
 	}
 	//Uzytkownicy
-	else if(CopyData.Pos("http://blabler.pl/u/")==1)
+	else if((CopyData.Pos("http://blabler.pl/u/")==1)||(CopyData.Pos("https://blabler.pl/u/")==1))
 	{
 	  //Wyciaganie nick'a
 	  CopyData.Delete(1,CopyData.Pos("/u/")+2);
