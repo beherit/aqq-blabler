@@ -422,6 +422,20 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 }
 //---------------------------------------------------------------------------
 
+//Kodowanie ciagu znakow do Base64
+UnicodeString EncodeBase64(UnicodeString Str)
+{
+  return (wchar_t*)PluginLink.CallService(AQQ_FUNCTION_BASE64,(WPARAM)Str.w_str(),3);
+}
+//---------------------------------------------------------------------------
+
+//Dekodowanie ciagu znakow z Base64
+UnicodeString DecodeBase64(UnicodeString Str)
+{
+  return (wchar_t*)PluginLink.CallService(AQQ_FUNCTION_BASE64,(WPARAM)Str.w_str(),2);
+}
+//---------------------------------------------------------------------------
+
 //Konwersja tekstu na liczbe
 int Convert(UnicodeString Char)
 {
@@ -468,8 +482,7 @@ bool GetDataFromAPI(UnicodeString URL, UnicodeString ID)
 	if(MainChildNodes->NodeName=="body")
 	{
 	  TIniFile *Ini = new TIniFile(CacheDir);
-	  ShortString TextShort = UTF8EncodeToShortString(MainChildNodes->GetText());
-	  Ini->WriteString(ID,"Body",StrToIniStr(TextShort.operator AnsiString()));
+	  Ini->WriteString(ID,"Body64",EncodeBase64(MainChildNodes->GetText()));
 	  delete Ini;
 	}
 	//Informacja o nadawcy wiadomosci
@@ -1841,7 +1854,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
@@ -1852,7 +1865,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
@@ -1882,7 +1895,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));;
 			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
@@ -1893,7 +1906,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
@@ -2014,7 +2027,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
@@ -2025,7 +2038,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
@@ -2054,7 +2067,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
 			//Szukanie wiadomosci w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
 			delete Ini;
 			//Wiadomosc nie zapisana w cache
@@ -2065,7 +2078,7 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 			  {
 				//Ponowne szukanie wiadomosci w cache
 				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = UTF8ToUnicodeString(IniStrToStr(Ini->ReadString(ConvertToInt(ID),"Body","")));
+				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
 				From = Ini->ReadString(ConvertToInt(ID),"From","");
 				delete Ini;
 			  }
@@ -2338,8 +2351,7 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 			  UnicodeString Text = ChildNode->GetText();
 			  //Zapisywanie informacji do cache
 			  TIniFile *Ini = new TIniFile(CacheDir);
-			  ShortString TextShort = UTF8EncodeToShortString(Text);
-			  Ini->WriteString(ConvertToInt(ID),"Body",StrToIniStr(TextShort.operator AnsiString()));
+			  Ini->WriteString(ConvertToInt(ID),"Body64",EncodeBase64(Text));
 			  Ini->WriteString(ConvertToInt(ID),"From",From);
 			  delete Ini;
 			}
