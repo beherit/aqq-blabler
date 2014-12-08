@@ -27,8 +27,7 @@
 #include <PluginAPI.h>
 #include <inifiles.hpp>
 #include <IdHashMessageDigest.hpp>
-#include <time.h>
-#include <stdio.h>
+#include <fstream>
 #include <XMLDoc.hpp>
 
 int WINAPI DllEntryPoint(HINSTANCE hinst, unsigned long reason, void* lpReserved)
