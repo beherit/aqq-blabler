@@ -220,10 +220,6 @@ object BlablerForm: TBlablerForm
       Caption = 'Awatary'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object AvatarsSizeGroupBox: TsGroupBox
         Left = 7
         Top = 3
@@ -232,6 +228,7 @@ object BlablerForm: TBlablerForm
         Caption = 'Rozmiar awatar'#243'w'
         TabOrder = 0
         SkinData.SkinSection = 'GROUPBOX'
+        Checked = False
         object PixelInfoLabel: TsLabel
           Left = 119
           Top = 23
@@ -274,15 +271,6 @@ object BlablerForm: TBlablerForm
           TabOrder = 1
           Text = '25'
           SkinData.SkinSection = 'EDIT'
-          BoundLabel.Indent = 0
-          BoundLabel.Font.Charset = DEFAULT_CHARSET
-          BoundLabel.Font.Color = clWindowText
-          BoundLabel.Font.Height = -11
-          BoundLabel.Font.Name = 'Tahoma'
-          BoundLabel.Font.Style = []
-          BoundLabel.Layout = sclLeft
-          BoundLabel.MaxWidth = 0
-          BoundLabel.UseSkinColor = True
         end
         object AvatarWidthCSpinEdit: TsSpinEdit
           Left = 28
@@ -300,15 +288,6 @@ object BlablerForm: TBlablerForm
           Text = '25'
           OnChange = AvatarWidthCSpinEditChange
           SkinData.SkinSection = 'EDIT'
-          BoundLabel.Indent = 0
-          BoundLabel.Font.Charset = DEFAULT_CHARSET
-          BoundLabel.Font.Color = clWindowText
-          BoundLabel.Font.Height = -11
-          BoundLabel.Font.Name = 'Tahoma'
-          BoundLabel.Font.Style = []
-          BoundLabel.Layout = sclLeft
-          BoundLabel.MaxWidth = 0
-          BoundLabel.UseSkinColor = True
           MaxValue = 120
           MinValue = 15
           Value = 25
@@ -322,6 +301,7 @@ object BlablerForm: TBlablerForm
         Caption = 'Aktualizacja awatar'#243'w'
         TabOrder = 1
         SkinData.SkinSection = 'GROUPBOX'
+        Checked = False
         object LastAvatarsUpdateLabel: TsLabelFX
           Left = 144
           Top = 47
@@ -401,14 +381,6 @@ object BlablerForm: TBlablerForm
           BoundLabel.Active = True
           BoundLabel.Caption = 'Automatyczna aktualizacje awatar'#243'w:'
           BoundLabel.Indent = 2
-          BoundLabel.Font.Charset = EASTEUROPE_CHARSET
-          BoundLabel.Font.Color = clWindowText
-          BoundLabel.Font.Height = -11
-          BoundLabel.Font.Name = 'Tahoma'
-          BoundLabel.Font.Style = []
-          BoundLabel.Layout = sclLeft
-          BoundLabel.MaxWidth = 0
-          BoundLabel.UseSkinColor = True
           SkinData.SkinSection = 'COMBOBOX'
           VerticalAlignment = taAlignTop
           Style = csDropDownList
@@ -437,6 +409,7 @@ object BlablerForm: TBlablerForm
         Caption = 'Styl awatar'#243'w'
         TabOrder = 2
         SkinData.SkinSection = 'GROUPBOX'
+        Checked = False
         object AvatarsStyleLabel: TsLabel
           Left = 14
           Top = 20
@@ -531,15 +504,6 @@ object BlablerForm: TBlablerForm
           Text = 
             '<span style="display: inline-block; padding: 2px 4px '#13#10'0px 1px; ' +
             'vertical-align: middle;">CC_AVATAR</span>'#13#10
-          BoundLabel.Indent = 0
-          BoundLabel.Font.Charset = DEFAULT_CHARSET
-          BoundLabel.Font.Color = clWindowText
-          BoundLabel.Font.Height = -11
-          BoundLabel.Font.Name = 'Tahoma'
-          BoundLabel.Font.Style = []
-          BoundLabel.Layout = sclLeft
-          BoundLabel.MaxWidth = 0
-          BoundLabel.UseSkinColor = True
           SkinData.SkinSection = 'EDIT'
         end
       end
@@ -548,10 +512,6 @@ object BlablerForm: TBlablerForm
       Caption = 'Wyr'#243#380'nianie'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object EraseHighlightMsgSpeedButton: TsSpeedButton
         Left = 17
         Top = 154
@@ -768,15 +728,6 @@ object BlablerForm: TBlablerForm
         Top = 36
         Width = 280
         Height = 113
-        BoundLabel.Indent = 0
-        BoundLabel.Font.Charset = DEFAULT_CHARSET
-        BoundLabel.Font.Color = clWindowText
-        BoundLabel.Font.Height = -11
-        BoundLabel.Font.Name = 'Tahoma'
-        BoundLabel.Font.Style = []
-        BoundLabel.Layout = sclLeft
-        BoundLabel.MaxWidth = 0
-        BoundLabel.UseSkinColor = True
         SkinData.SkinSection = 'EDIT'
         Columns = <
           item
@@ -808,15 +759,6 @@ object BlablerForm: TBlablerForm
         Text = '#FF0000'
         OnChange = ColorHighlightMsgEditChange
         SkinData.SkinSection = 'EDIT'
-        BoundLabel.Indent = 0
-        BoundLabel.Font.Charset = DEFAULT_CHARSET
-        BoundLabel.Font.Color = clWindowText
-        BoundLabel.Font.Height = -11
-        BoundLabel.Font.Name = 'Tahoma'
-        BoundLabel.Font.Style = []
-        BoundLabel.Layout = sclLeft
-        BoundLabel.MaxWidth = 0
-        BoundLabel.UseSkinColor = True
       end
       object ItemHighlightMsgEdit: TsEdit
         Left = 46
@@ -825,15 +767,6 @@ object BlablerForm: TBlablerForm
         Height = 21
         TabOrder = 2
         SkinData.SkinSection = 'EDIT'
-        BoundLabel.Indent = 0
-        BoundLabel.Font.Charset = DEFAULT_CHARSET
-        BoundLabel.Font.Color = clWindowText
-        BoundLabel.Font.Height = -11
-        BoundLabel.Font.Name = 'Tahoma'
-        BoundLabel.Font.Style = []
-        BoundLabel.Layout = sclLeft
-        BoundLabel.MaxWidth = 0
-        BoundLabel.UseSkinColor = True
       end
       object HighlightMsgModeComboBox: TsComboBox
         Left = 17
@@ -844,14 +777,7 @@ object BlablerForm: TBlablerForm
         BoundLabel.Active = True
         BoundLabel.Caption = 'Spos'#243'b wyr'#243#380'niania wiadomo'#347'ci:'
         BoundLabel.Indent = 4
-        BoundLabel.Font.Charset = EASTEUROPE_CHARSET
-        BoundLabel.Font.Color = clWindowText
-        BoundLabel.Font.Height = -11
-        BoundLabel.Font.Name = 'Tahoma'
-        BoundLabel.Font.Style = []
         BoundLabel.Layout = sclTopLeft
-        BoundLabel.MaxWidth = 0
-        BoundLabel.UseSkinColor = True
         SkinData.SkinSection = 'COMBOBOX'
         VerticalAlignment = taAlignTop
         Style = csOwnerDrawFixed
@@ -880,7 +806,7 @@ object BlablerForm: TBlablerForm
   end
   object ActionList: TActionList
     Left = 96
-    Top = 264
+    Top = 232
     object aLoadSettings: TAction
       Caption = 'aLoadSettings'
       OnExecute = aLoadSettingsExecute
@@ -909,7 +835,7 @@ object BlablerForm: TBlablerForm
     Priority = tpNormal
     StopMode = smTerminate
     OnRun = ManualAvatarsUpdateThreadRun
-    Left = 160
+    Left = 96
     Top = 296
   end
   object AutoAvatarsUpdateThread: TIdThreadComponent
@@ -918,13 +844,11 @@ object BlablerForm: TBlablerForm
     Priority = tpNormal
     StopMode = smTerminate
     OnRun = AutoAvatarsUpdateThreadRun
-    Left = 192
+    Left = 64
     Top = 296
   end
   object AUIdHTTP: TIdHTTP
-    OnWork = AUIdHTTPWork
-    OnWorkBegin = AUIdHTTPWorkBegin
-    OnWorkEnd = AUIdHTTPWorkEnd
+    IOHandler = IdSSLIOHandlerSocketOpenSSL
     AllowCookies = False
     HandleRedirects = True
     ProxyParams.BasicAuthentication = False
@@ -941,13 +865,12 @@ object BlablerForm: TBlablerForm
     Request.Ranges = <>
     HTTPOptions = [hoForceEncodeParams]
     Left = 96
-    Top = 296
+    Top = 264
   end
   object AnimateTimer: TTimer
     Enabled = False
     Interval = 15
     OnTimer = AnimateTimerTimer
-    Top = 264
   end
   object sSkinManager: TsSkinManager
     ExtendedBorders = True
@@ -987,8 +910,8 @@ object BlablerForm: TBlablerForm
     ThirdParty.ThirdStaticText = ' '
     ThirdParty.ThirdNativePaint = ' '
     OnSysDlgInit = sSkinManagerSysDlgInit
-    Left = 160
-    Top = 264
+    Left = 64
+    Top = 232
   end
   object sSkinProvider: TsSkinProvider
     AddedTitle.Font.Charset = DEFAULT_CHARSET
@@ -996,15 +919,14 @@ object BlablerForm: TBlablerForm
     AddedTitle.Font.Height = -11
     AddedTitle.Font.Name = 'Tahoma'
     AddedTitle.Font.Style = []
+    FormHeader.AdditionalHeight = 0
     SkinData.SkinSection = 'FORM'
     TitleButtons = <>
-    Left = 128
-    Top = 264
+    Left = 32
+    Top = 232
   end
   object AIdHTTP: TIdHTTP
-    OnWork = AIdHTTPWork
-    OnWorkBegin = AIdHTTPWorkBegin
-    OnWorkEnd = AIdHTTPWorkEnd
+    IOHandler = IdSSLIOHandlerSocketOpenSSL
     AllowCookies = False
     HandleRedirects = True
     ProxyParams.BasicAuthentication = False
@@ -1021,20 +943,6 @@ object BlablerForm: TBlablerForm
     Request.Ranges = <>
     HTTPOptions = [hoForceEncodeParams]
     Left = 64
-    Top = 296
-  end
-  object AUIdHTTPTimer: TTimer
-    Enabled = False
-    Interval = 10000
-    OnTimer = AUIdHTTPTimerTimer
-    Left = 64
-    Top = 264
-  end
-  object AvatarsIdHTTPTimer: TTimer
-    Enabled = False
-    Interval = 10000
-    OnTimer = AvatarsIdHTTPTimerTimer
-    Left = 32
     Top = 264
   end
   object GetAvatarsThread: TIdThreadComponent
@@ -1043,10 +951,11 @@ object BlablerForm: TBlablerForm
     Priority = tpNormal
     StopMode = smTerminate
     OnRun = GetAvatarsThreadRun
-    Left = 128
+    Left = 32
     Top = 296
   end
   object IdHTTP: TIdHTTP
+    IOHandler = IdSSLIOHandlerSocketOpenSSL
     AllowCookies = False
     HandleRedirects = True
     ProxyParams.BasicAuthentication = False
@@ -1062,18 +971,28 @@ object BlablerForm: TBlablerForm
     Request.Ranges.Units = 'bytes'
     Request.Ranges = <>
     HTTPOptions = [hoForceEncodeParams]
-    Top = 294
+    Left = 32
+    Top = 264
   end
   object IdAntiFreeze: TIdAntiFreeze
     Active = False
     OnlyWhenIdle = False
-    Left = 32
-    Top = 294
+    Top = 296
   end
   object Taskbar: TTaskbar
     TaskBarButtons = <>
     TabProperties = []
-    Left = 194
-    Top = 262
+    Top = 232
+  end
+  object IdSSLIOHandlerSocketOpenSSL: TIdSSLIOHandlerSocketOpenSSL
+    MaxLineAction = maException
+    Port = 0
+    DefaultPort = 0
+    SSLOptions.Method = sslvSSLv23
+    SSLOptions.SSLVersions = [sslvTLSv1, sslvTLSv1_1, sslvTLSv1_2]
+    SSLOptions.Mode = sslmUnassigned
+    SSLOptions.VerifyMode = []
+    SSLOptions.VerifyDepth = 0
+    Top = 264
   end
 end

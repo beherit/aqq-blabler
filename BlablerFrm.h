@@ -57,6 +57,11 @@
 #include <Vcl.StdCtrls.hpp>
 #include <System.Win.TaskbarCore.hpp>
 #include <Vcl.Taskbar.hpp>
+#include <IdIOHandler.hpp>
+#include <IdIOHandlerSocket.hpp>
+#include <IdIOHandlerStack.hpp>
+#include <IdSSL.hpp>
+#include <IdSSLOpenSSL.hpp>
 //---------------------------------------------------------------------------
 class TBlablerForm : public TForm
 {
@@ -113,12 +118,11 @@ __published:	// IDE-managed Components
 	TsLabel *HighlightMsgModeLabel;
 	TIdHTTP *AIdHTTP;
 	TMemo *FileMemo;
-	TTimer *AUIdHTTPTimer;
-	TTimer *AvatarsIdHTTPTimer;
 	TIdThreadComponent *GetAvatarsThread;
 	TIdHTTP *IdHTTP;
 	TIdAntiFreeze *IdAntiFreeze;
 	TTaskbar *Taskbar;
+	TIdSSLIOHandlerSocketOpenSSL *IdSSLIOHandlerSocketOpenSSL;
 	void __fastcall SaveButtonClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall aLoadSettingsExecute(TObject *Sender);
@@ -146,21 +150,11 @@ __published:	// IDE-managed Components
 	void __fastcall HighlightMsgCheckBoxClick(TObject *Sender);
 	void __fastcall HighlightMsgListViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall HighlightMsgModeComboBoxChange(TObject *Sender);
-	void __fastcall AUIdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount);
-	void __fastcall AUIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCountMax);
-	void __fastcall AUIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode);
-	void __fastcall AUIdHTTPTimerTimer(TObject *Sender);
-	void __fastcall AIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCountMax);
-	void __fastcall AIdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount);
-	void __fastcall AIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode);
-	void __fastcall AvatarsIdHTTPTimerTimer(TObject *Sender);
 	void __fastcall GetAvatarsThreadRun(TIdThreadComponent *Sender);
 	void __fastcall ColorHighlightMsgEditChange(TObject *Sender);
 	void __fastcall sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning);
 private:	// User declarations
 public:		// User declarations
-	bool IdHTTPManualDisconnected;
-	bool AUIdHTTPManualDisconnected;
 	__fastcall TBlablerForm(TComponent* Owner);
 	void __fastcall WMTransparency(TMessage &Message);
 	bool __fastcall AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);

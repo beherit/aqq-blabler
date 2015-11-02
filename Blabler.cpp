@@ -288,6 +288,7 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 	try
 	{
 		//Wywolanie polaczenia
+		hBlablerForm->IdHTTP->ConnectTimeout = 10000;
 		ResponseText = hBlablerForm->IdHTTP->Get(URL);
 	}
 	//Blad
@@ -295,20 +296,29 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 	{
 		//Hack na wywalanie sie IdHTTP
 		if(e.Message=="Connection Closed Gracefully.")
+		{
+			//Hack
 			hBlablerForm->IdHTTP->CheckForGracefulDisconnect(false);
-		//Rozlaczenie polaczenia
-		hBlablerForm->IdHTTP->Disconnect();
-		//Zwrot pustych danych
-		return "";
+			//Rozlaczenie polaczenia
+			hBlablerForm->IdHTTP->Disconnect();
+			//Zwrot pustych danych
+			return "";
+		}
+		//Inne bledy
+		else
+		{
+			//Rozlaczenie polaczenia
+			hBlablerForm->IdHTTP->Disconnect();
+			//Zwrot pustych danych
+			return "";
+		}
 	}
 	//Pobranie kodu odpowiedzi
 	int Response = hBlablerForm->IdHTTP->ResponseCode;
 	//Wszystko ok
-	if(Response==200)
-		return ResponseText;
+	if(Response==200) return ResponseText;
 	//Inne bledy
-	else
-		return "";
+	else return "";
 }
 //---------------------------------------------------------------------------
 

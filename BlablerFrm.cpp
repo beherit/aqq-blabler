@@ -19,14 +19,15 @@
 
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#pragma hdrstop
-#include "BlablerFrm.h"
 #include <inifiles.hpp>
 #include <utilcls.h>
 #pragma package(smart_init)
 #ifdef _WIN64
 #pragma link "Vcl.IdAntiFreeze"
 #endif
+#pragma hdrstop
+#include "BlablerFrm.h"
+//---------------------------------------------------------------------------
 #pragma link "acProgressBar"
 #pragma link "sBevel"
 #pragma link "sButton"
@@ -90,6 +91,7 @@ bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeSt
 	try
 	{
 		//Wywolanie polaczenia
+		AIdHTTP->ConnectTimeout = 10000;
 		AIdHTTP->Get(URL, File);
 	}
 	//Blad
@@ -97,29 +99,33 @@ bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeSt
 	{
 		//Hack na wywalanie sie IdHTTP
 		if(e.Message=="Connection Closed Gracefully.")
+		{
+			//Hack
 			AIdHTTP->CheckForGracefulDisconnect(false);
-		//Rozlaczenie polaczenia
-		AIdHTTP->Disconnect();
-		//Ustawianie pozycji pliku na poczatek
-		File->Position = 0;
-		return false;
+			//Rozlaczenie polaczenia
+			AIdHTTP->Disconnect();
+			//Ustawianie pozycji pliku na poczatek
+			File->Position = 0;
+			return false;
+		}
+		//Inne bledy
+		else
+		{
+			//Rozlaczenie polaczenia
+			AIdHTTP->Disconnect();
+			//Ustawianie pozycji pliku na poczatek
+			File->Position = 0;
+			return false;
+		}
 	}
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
-	//Polaczenie bylo zerwane
-	if(IdHTTPManualDisconnected)
-	{
-		IdHTTPManualDisconnected = false;
-		return false;
-	}
 	//Pobranie kodu odpowiedzi
 	int Response = AIdHTTP->ResponseCode;
 	//Wszystko ok
-	if(Response==200)
-		return true;
+	if(Response==200) return true;
 	//Inne bledy
-	else
-		return false;
+	else return false;
 }
 //---------------------------------------------------------------------------
 
@@ -132,6 +138,7 @@ bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeS
 	try
 	{
 		//Wywolanie polaczenia
+		AUIdHTTP->ConnectTimeout = 10000;
 		AUIdHTTP->Get(URL, File);
 	}
 	//Blad
@@ -139,29 +146,33 @@ bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeS
 	{
 		//Hack na wywalanie sie IdHTTP
 		if(e.Message=="Connection Closed Gracefully.")
+		{
+			//Hack
 			AUIdHTTP->CheckForGracefulDisconnect(false);
-		//Rozlaczenie polaczenia
-		AUIdHTTP->Disconnect();
-		//Ustawianie pozycji pliku na poczatek
-		File->Position = 0;
-		return false;
+			//Rozlaczenie polaczenia
+			AUIdHTTP->Disconnect();
+			//Ustawianie pozycji pliku na poczatek
+			File->Position = 0;
+			return false;
+		}
+		//Inne bledy
+		else
+		{
+			//Rozlaczenie polaczenia
+			AUIdHTTP->Disconnect();
+			//Ustawianie pozycji pliku na poczatek
+			File->Position = 0;
+			return false;
+		}
 	}
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
-	//Polaczenie bylo zerwane
-	if(AUIdHTTPManualDisconnected)
-	{
-		AUIdHTTPManualDisconnected = false;
-		return false;
-	}
 	//Pobranie kodu odpowiedzi
 	int Response = AUIdHTTP->ResponseCode;
 	//Wszystko ok
-	if(Response==200)
-		return true;
+	if(Response==200) return true;
 	//Inne bledy
-	else
-		return false;
+	else return false;
 }
 //---------------------------------------------------------------------------
 
@@ -799,77 +810,6 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
 	AutoAvatarsUpdateThread->Stop();
 }
 //---------------------------------------------------------------------------*/
-
-void __fastcall TBlablerForm::AUIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
-			__int64 AWorkCountMax)
-{
-	//Wlaczenie timera pilnujacego zawieszenie polaczenia
-	AUIdHTTPTimer->Enabled = true;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AUIdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount)
-
-{
-	//Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
-	AUIdHTTPTimer->Enabled = false;
-	AUIdHTTPTimer->Enabled = true;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AUIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
-
-{
-	//Wylaczenie timera pilnujacego zawieszenie polaczenia
-	AUIdHTTPTimer->Enabled = false;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AUIdHTTPTimerTimer(TObject *Sender)
-{
-	//Wylaczenie timera pilnujacego zawieszenie polaczenia
-	AUIdHTTPTimer->Enabled = false;
-	//Odznaczenie wymuszenia przerwania polaczenia
-	AUIdHTTPManualDisconnected = true;
-	//Przerwanie polaczenia
-	AUIdHTTP->Disconnect();
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
-			__int64 AWorkCountMax)
-{
-	//Wlaczenie timera pilnujacego zawieszenie polaczenia
-	AvatarsIdHTTPTimer->Enabled = true;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AIdHTTPWork(TObject *ASender, TWorkMode AWorkMode,
-			__int64 AWorkCount)
-{
-	//Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
-	AvatarsIdHTTPTimer->Enabled = false;
-	AvatarsIdHTTPTimer->Enabled = true;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
-{
-	//Wylaczenie timera pilnujacego zawieszenie polaczenia
-	AvatarsIdHTTPTimer->Enabled = false;
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::AvatarsIdHTTPTimerTimer(TObject *Sender)
-{
-	//Wylaczenie timera pilnujacego zawieszenie polaczenia
-	AvatarsIdHTTPTimer->Enabled = false;
-	//Odznaczenie wymuszenia przerwania polaczenia
-	IdHTTPManualDisconnected = true;
-	//Przerwanie polaczenia
-	AIdHTTP->Disconnect();
-}
-//---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 {
