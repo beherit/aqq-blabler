@@ -19,14 +19,14 @@
 
 #include <vcl.h>
 #include <windows.h>
-#pragma hdrstop
-#pragma argsused
 #include "BlablerFrm.h"
-#include <PluginAPI.h>
 #include <inifiles.hpp>
 #include <IdHashMessageDigest.hpp>
 #include <fstream>
 #include <XMLDoc.hpp>
+#include <PluginAPI.h>
+#include <LangAPI.hpp>
+#pragma hdrstop
 
 int WINAPI DllEntryPoint(HINSTANCE hinst, unsigned long reason, void* lpReserved)
 {
@@ -35,7 +35,7 @@ int WINAPI DllEntryPoint(HINSTANCE hinst, unsigned long reason, void* lpReserved
 //---------------------------------------------------------------------------
 
 //Uchwyt-do-formy-ustawien---------------------------------------------------
-TBlablerForm* hBlablerForm;
+TSettingsForm* hSettingsForm;
 //Struktury-glowne-----------------------------------------------------------
 TPluginLink PluginLink;
 TPluginInfo PluginInfo;
@@ -48,6 +48,7 @@ int BotUsrIdx;
 UnicodeString AttachmentStyle;
 //Awatary
 TStringList *GetAvatarsList = new TStringList;
+int AvatarType;
 UnicodeString AvatarStyle;
 UnicodeString AvatarsDir;
 UnicodeString AvatarsDirW;
@@ -98,13 +99,13 @@ LRESULT CALLBACK TimerFrmProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 void OpenSettingsForm()
 {
 	//Przypisanie uchwytu do formy ustawien
-	if(!hBlablerForm)
+	if(!hSettingsForm)
 	{
-		Application->Handle = (HWND)BlablerForm;
-		hBlablerForm = new TBlablerForm(Application);
+		Application->Handle = (HWND)SettingsForm;
+		hSettingsForm = new TSettingsForm(Application);
 	}
 	//Pokaznie okna ustawien
-	hBlablerForm->Show();
+	hSettingsForm->Show();
 }
 //---------------------------------------------------------------------------
 
@@ -242,9 +243,11 @@ int GetBrightness()
 TColor GetWarningColor()
 {
 	//Odczyt pliku
-	hBlablerForm->FileMemo->Lines->LoadFromFile(GetThemeDir()+"\\\\elements.xml");
-	hBlablerForm->FileMemo->Text = "<content>" + hBlablerForm->FileMemo->Text + " </content>";
-	_di_IXMLDocument XMLDoc = LoadXMLData(hBlablerForm->FileMemo->Text);
+	TStringStream *Stream = new TStringStream;
+	Stream->LoadFromFile(GetThemeDir()+"\\\\elements.xml");
+	UnicodeString Text = Stream->DataString;
+	delete Stream;
+	_di_IXMLDocument XMLDoc = LoadXMLData("<content>" + Text + " </content>");
 	_di_IXMLNode MainNode = XMLDoc->DocumentElement;
 	int MainNodesCount = MainNode->ChildNodes->GetCount();
 	//Parsowanie pliku XML
@@ -275,6 +278,7 @@ TColor GetWarningColor()
 			}
 		}
 	}
+	//Zwrocenie koloru
 	return (TColor)RGB(0,0,0);
 }
 //---------------------------------------------------------------------------
@@ -282,14 +286,20 @@ TColor GetWarningColor()
 //Pobieranie danych z danego URL
 UnicodeString IdHTTPGet(UnicodeString URL)
 {
+	//Przypisanie uchwytu do formy ustawien
+	if(!hSettingsForm)
+	{
+		Application->Handle = (HWND)SettingsForm;
+		hSettingsForm = new TSettingsForm(Application);
+	}
 	//Zmienna z danymi
 	UnicodeString ResponseText;
 	//Proba pobrania danych
 	try
 	{
 		//Wywolanie polaczenia
-		hBlablerForm->IdHTTP->ConnectTimeout = 10000;
-		ResponseText = hBlablerForm->IdHTTP->Get(URL);
+		hSettingsForm->IdHTTP->ConnectTimeout = 10000;
+		ResponseText = hSettingsForm->IdHTTP->Get(URL);
 	}
 	//Blad
 	catch(const Exception& e)
@@ -298,9 +308,9 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 		if(e.Message=="Connection Closed Gracefully.")
 		{
 			//Hack
-			hBlablerForm->IdHTTP->CheckForGracefulDisconnect(false);
+			hSettingsForm->IdHTTP->CheckForGracefulDisconnect(false);
 			//Rozlaczenie polaczenia
-			hBlablerForm->IdHTTP->Disconnect();
+			hSettingsForm->IdHTTP->Disconnect();
 			//Zwrot pustych danych
 			return "";
 		}
@@ -308,13 +318,13 @@ UnicodeString IdHTTPGet(UnicodeString URL)
 		else
 		{
 			//Rozlaczenie polaczenia
-			hBlablerForm->IdHTTP->Disconnect();
+			hSettingsForm->IdHTTP->Disconnect();
 			//Zwrot pustych danych
 			return "";
 		}
 	}
 	//Pobranie kodu odpowiedzi
-	int Response = hBlablerForm->IdHTTP->ResponseCode;
+	int Response = hSettingsForm->IdHTTP->ResponseCode;
 	//Wszystko ok
 	if(Response==200) return ResponseText;
 	//Inne bledy
@@ -363,12 +373,18 @@ UnicodeString ConvertToInt(UnicodeString Text)
 //Pobieranie danych przez API
 bool GetDataFromAPI(UnicodeString URL, UnicodeString ID)
 {
+	//Przypisanie uchwytu do formy ustawien
+	if(!hSettingsForm)
+	{
+		Application->Handle = (HWND)SettingsForm;
+		hSettingsForm = new TSettingsForm(Application);
+	}
 	//Wlaczenie AntiFreeze
-	hBlablerForm->IdAntiFreeze->Active = true;
+	hSettingsForm->IdAntiFreeze->Active = true;
 	//Pobieranie danych przez API
 	UnicodeString Data = IdHTTPGet(URL);
 	//Wylaczenie AntiFreeze
-	hBlablerForm->IdAntiFreeze->Active = false;
+	hSettingsForm->IdAntiFreeze->Active = false;
 	//Nie udalo sie pobrac danych
 	if(Data.IsEmpty()) return false;
 	//Parsowanie danych
@@ -436,26 +452,34 @@ void GetThemeStyle()
 	ThemeURLW = StringReplace(ThemeURLW, "\\", "\\\\", TReplaceFlags() << rfReplaceAll);
 	ThemeURLW = ThemeURLW + "\\\\System\\\\Shared\\\\Themes\\\\Standard";
 	//Pobieranie stylu zalacznika
-	if(FileExists(ThemeURL + "\\\\Message\\\\Attachment.htm"))
-		hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURL + "\\\\Message\\\\Attachment.htm");
-	else
-		hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURLW + "\\\\Message\\\\Attachment.htm");
-	//Wyciaganie wlasciwego stylu zalacznika
-	int LinesCount = hBlablerForm->FileMemo->Lines->Count;
-	for(int Count=0;Count<LinesCount;Count++)
+	TStringStream *Stream = new TStringStream;
+	if((FileExists(ThemeURL + "\\\\Message\\\\Attachment.htm"))||(FileExists(ThemeURL + "\\\\Message\\\\Attachment.html")))
 	{
-		if(hBlablerForm->FileMemo->Lines->Strings[Count].Pos("CC_ATTACH_ICON"))
+		if(FileExists(ThemeURL + "\\\\Message\\\\Attachment.htm")) Stream->LoadFromFile(ThemeURL + "\\\\Message\\\\Attachment.htm");
+		else Stream->LoadFromFile(ThemeURL + "\\\\Message\\\\Attachment.html");
+	}
+	else
+	{
+		if(FileExists(ThemeURLW + "\\\\Message\\\\Attachment.htm")) Stream->LoadFromFile(ThemeURLW + "\\\\Message\\\\Attachment.htm");
+		else Stream->LoadFromFile(ThemeURLW + "\\\\Message\\\\Attachment.html");
+	}
+	TStringList *DataText = new TStringList;
+	DataText->Text = Stream->DataString;
+	delete Stream;
+	//Wyciaganie wlasciwego stylu zalacznika
+	for(int Count=0;Count<DataText->Count;Count++)
+	{
+		if(DataText->Strings[Count].Pos("CC_ATTACH_ICON"))
 		{
 			//Pobranie stylu zalacznika
-			AttachmentStyle = hBlablerForm->FileMemo->Lines->Strings[Count];
-			AttachmentStyle = AttachmentStyle.Trim();
+			AttachmentStyle = DataText->Strings[Count].Trim();
 			//Zakonczenie petli
-			Count = LinesCount;
+			Count = DataText->Count;
 		}
 	}
+	delete DataText;
 	//Brak wczytanego stylu zalacznika z kompozycji - styl domyslny
-	if(AttachmentStyle.IsEmpty())
-		AttachmentStyle = "<SPAN class=\"attach_icon\">CC_ATTACH_ICON</SPAN><SPAN id=\"attach_caption\">CC_ATTACH_CAPTION</SPAN>: <SPAN class=\"attach_short\">CC_ATTACH_SHORT</SPAN>";
+	if(AttachmentStyle.IsEmpty()) AttachmentStyle = "<SPAN class=\"attach_icon\">CC_ATTACH_ICON</SPAN><SPAN id=\"attach_caption\">CC_ATTACH_CAPTION</SPAN>: <SPAN class=\"attach_short\">CC_ATTACH_SHORT</SPAN>";
 	//Usuwanie zbednego formatowana ze stylu
 	else if(AttachmentStyle.LowerCase().Pos("<div")==1)
 	{
@@ -466,57 +490,39 @@ void GetThemeStyle()
 	//Dodawanie odstepu do stylu zalacznika
 	AttachmentStyle = "<div style=\"display:block;padding-top:5px;\">"+AttachmentStyle+"</div>";
 	//Pobieranie stylu awatarow
-	if(FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm"))
+	if((FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm"))||(FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.html")))
 	{
 		//Pobieranie danych z pliku
-		hBlablerForm->FileMemo->Lines->LoadFromFile(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm");
-		AvatarStyle = hBlablerForm->FileMemo->Text;
-		AvatarStyle = AvatarStyle.Trim();
+		TStringStream *Stream = new TStringStream;
+		if(FileExists(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm")) Stream->LoadFromFile(ThemeURL + "\\\\Message\\\\BlablerAvatar.htm");
+		else Stream->LoadFromFile(ThemeURL + "\\\\Message\\\\BlablerAvatar.html");
+		AvatarStyle = Stream->DataString.Trim();
+		delete Stream;
 		//Sprawdzanie zawartosci pliku
-		if(AvatarStyle.Pos("CC_AVATAR"))
+		if(!AvatarStyle.Pos("CC_AVATAR"))
 		{
-			hBlablerForm->UsedAvatarsStyleLabel->Caption = "z kompozycji";
-			hBlablerForm->EditAvatarsStyleLabel->Left = hBlablerForm->UsedAvatarsStyleLabel->Left + hBlablerForm->UsedAvatarsStyleLabel->Width + 6;
-			hBlablerForm->EditAvatarsStyleLabel->Caption = "(edytuj)";
-			hBlablerForm->AvatarsStyleGroupBox->Height = 42;
-			hBlablerForm->EditAvatarsStyleLabel->Enabled = false;
+			if(!StaticAvatarStyle.IsEmpty())
+			{
+				AvatarStyle = StaticAvatarStyle;
+				AvatarType = 1;
+			}
+			else
+			{
+				AvatarStyle = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";;
+				AvatarType = 2;
+			}
 		}
-		else if(!StaticAvatarStyle.IsEmpty())
-		{
-			AvatarStyle = StaticAvatarStyle;
-			hBlablerForm->UsedAvatarsStyleLabel->Caption = "w³asny";
-			hBlablerForm->EditAvatarsStyleLabel->Left = hBlablerForm->UsedAvatarsStyleLabel->Left + hBlablerForm->UsedAvatarsStyleLabel->Width + 6;
-			hBlablerForm->EditAvatarsStyleLabel->Caption = "(edytuj)";
-			hBlablerForm->AvatarsStyleGroupBox->Height = 42;
-			hBlablerForm->EditAvatarsStyleLabel->Enabled = true;
-		}
-		else
-		{
-			AvatarStyle = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
-			hBlablerForm->UsedAvatarsStyleLabel->Caption = "domyœlny";
-			hBlablerForm->EditAvatarsStyleLabel->Left = hBlablerForm->UsedAvatarsStyleLabel->Left + hBlablerForm->UsedAvatarsStyleLabel->Width + 6;
-			hBlablerForm->EditAvatarsStyleLabel->Caption = "(edytuj)";
-			hBlablerForm->AvatarsStyleGroupBox->Height = 42;
-			hBlablerForm->EditAvatarsStyleLabel->Enabled = true;
-		}
+		else AvatarType = 0;
 	}
 	else if(!StaticAvatarStyle.IsEmpty())
 	{
 		AvatarStyle = StaticAvatarStyle;
-		hBlablerForm->UsedAvatarsStyleLabel->Caption = "w³asny";
-		hBlablerForm->EditAvatarsStyleLabel->Left = hBlablerForm->UsedAvatarsStyleLabel->Left + hBlablerForm->UsedAvatarsStyleLabel->Width + 6;
-		hBlablerForm->EditAvatarsStyleLabel->Caption = "(edytuj)";
-		hBlablerForm->AvatarsStyleGroupBox->Height = 42;
-		hBlablerForm->EditAvatarsStyleLabel->Enabled = true;
+		AvatarType = 1;
 	}
 	else
 	{
 		AvatarStyle = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
-		hBlablerForm->UsedAvatarsStyleLabel->Caption = "domyœlny";
-		hBlablerForm->EditAvatarsStyleLabel->Left = hBlablerForm->UsedAvatarsStyleLabel->Left + hBlablerForm->UsedAvatarsStyleLabel->Width + 6;
-		hBlablerForm->EditAvatarsStyleLabel->Caption = "(edytuj)";
-		hBlablerForm->AvatarsStyleGroupBox->Height = 42;
-		hBlablerForm->EditAvatarsStyleLabel->Enabled = true;
+		AvatarType = 2;
 	}
 }
 //---------------------------------------------------------------------------
@@ -532,6 +538,20 @@ UnicodeString GetAvatarStyle()
 void SetAvatarStyle(UnicodeString Style)
 {
 	AvatarStyle = Style;
+}
+//---------------------------------------------------------------------------
+
+//Pobieranie typu stylu awatarow z rdzenia wtyczki
+int GetAvatarType()
+{
+	return AvatarType;
+}
+//---------------------------------------------------------------------------
+
+//Ustawianie typu stylu awatarow w rdzeniu wtyczki
+int SetAvatarType(int Type)
+{
+	AvatarType = Type;
 }
 //---------------------------------------------------------------------------
 
@@ -574,43 +594,49 @@ void AutoAvatarsUpdate()
 		((AutoAvatarsUpdateMode==2)&&(DiffTime>=7))||
 		((AutoAvatarsUpdateMode==3)&&(DiffTime>=30)))
 		{
+			//Przypisanie uchwytu do formy ustawien
+			if(!hSettingsForm)
+			{
+				Application->Handle = (HWND)SettingsForm;
+				hSettingsForm = new TSettingsForm(Application);
+			}
 			//Zmiana caption na buttonie
-			hBlablerForm->ManualAvatarsUpdateButton->Caption = "Przerwij aktualizacje";
+			hSettingsForm->ManualAvatarsUpdateButton->Caption = "Przerwij aktualizacje";
 			//Tworzenie katalogu z awatarami
 			if(!DirectoryExists(AvatarsDir)) CreateDir(AvatarsDir);
 			//Wlaczenie paska postepu
-			hBlablerForm->ProgressBar->Position = 0;
-			hBlablerForm->ProgressBar->Visible = true;
-			hBlablerForm->ProgressLabel->Caption = "Pobieranie danych...";
-			hBlablerForm->ProgressLabel->Visible = true;
+			hSettingsForm->ProgressBar->Position = 0;
+			hSettingsForm->ProgressBar->Visible = true;
+			hSettingsForm->ProgressLabel->Caption = "Pobieranie danych...";
+			hSettingsForm->ProgressLabel->Visible = true;
 			//Wlaczenie paska postepu na taskbarze
-			hBlablerForm->Taskbar->ProgressValue = 0;
-			hBlablerForm->Taskbar->ProgressState = TTaskBarProgressState::Normal;
+			hSettingsForm->Taskbar->ProgressValue = 0;
+			hSettingsForm->Taskbar->ProgressState = TTaskBarProgressState::Normal;
 			//Pobieranie listy plikow
-			hBlablerForm->FileListBox->Directory = "";
-			hBlablerForm->FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
+			hSettingsForm->FileListBox->Directory = "";
+			hSettingsForm->FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
 			//Ignorowanie plikow *.tmp i plikow ze spacja (np. konflikty stworzone przez Dropbox'a)
-			for(int Count=0;Count<hBlablerForm->FileListBox->Items->Count;Count++)
+			for(int Count=0;Count<hSettingsForm->FileListBox->Items->Count;Count++)
 			{
-				if(ExtractFileName(hBlablerForm->FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
+				if(ExtractFileName(hSettingsForm->FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
 				{
-					DeleteFile(hBlablerForm->FileListBox->Items->Strings[Count]);
-					hBlablerForm->FileListBox->Items->Strings[Count] ="TMP_DELETE";
+					DeleteFile(hSettingsForm->FileListBox->Items->Strings[Count]);
+					hSettingsForm->FileListBox->Items->Strings[Count] ="TMP_DELETE";
 				}
-				else if(ExtractFileName(hBlablerForm->FileListBox->Items->Strings[Count]).Pos(" ")>0)
+				else if(ExtractFileName(hSettingsForm->FileListBox->Items->Strings[Count]).Pos(" ")>0)
 				{
-					DeleteFile(hBlablerForm->FileListBox->Items->Strings[Count]);
-					hBlablerForm->FileListBox->Items->Strings[Count] = "TMP_DELETE";
+					DeleteFile(hSettingsForm->FileListBox->Items->Strings[Count]);
+					hSettingsForm->FileListBox->Items->Strings[Count] = "TMP_DELETE";
 				}
 			}
-			while(hBlablerForm->FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
-				hBlablerForm->FileListBox->Items->Delete(hBlablerForm->FileListBox->Items->IndexOf("TMP_DELETE"));
+			while(hSettingsForm->FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
+				hSettingsForm->FileListBox->Items->Delete(hSettingsForm->FileListBox->Items->IndexOf("TMP_DELETE"));
 			//Ustawianie maksymalnego paska postepu
-			hBlablerForm->ProgressBar->Max = hBlablerForm->FileListBox->Items->Count;
+			hSettingsForm->ProgressBar->Max = hSettingsForm->FileListBox->Items->Count;
 			//Ustawianie maksymalnego paska postepu na taskbarze
-			hBlablerForm->Taskbar->ProgressMaxValue = hBlablerForm->FileListBox->Items->Count;
+			hSettingsForm->Taskbar->ProgressMaxValue = hSettingsForm->FileListBox->Items->Count;
 			//Wlacznie aktualizacji
-			hBlablerForm->AutoAvatarsUpdateThread->Start();
+			hSettingsForm->AutoAvatarsUpdateThread->Start();
 		}
 	}
 	delete Ini;
@@ -1273,737 +1299,749 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 	//Kontakt jest botem Blabler
 	if((ContactJID=="blabler.k2t.eu")||(ContactJID=="blabler@blabler.pl")||(ContactJID.Pos("48263287@plugin.gg")==1))
 	{
-	//Nadawca i odbiorca wiadomosci
-	UnicodeString BlablerSender = "";
-	UnicodeString BlablerReceiver = "";
-	//Pobieranie informacji o wiadomosci
-	TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
-	UnicodeString MessageDate = (double)AddLineMessage.Date;
-	UnicodeString MessageJID = (wchar_t*)AddLineMessage.JID;
-	if(MessageJID.Pos("/")) MessageJID.Delete(MessageJID.Pos("/"),MessageJID.Length());
-	UnicodeString Body = (wchar_t*)AddLineMessage.Body;
-	Body = Body.Trim();
+		//Nadawca i odbiorca wiadomosci
+		UnicodeString BlablerSender = "";
+		UnicodeString BlablerReceiver = "";
+		//Pobieranie informacji o wiadomosci
+		TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
+		UnicodeString MessageDate = (double)AddLineMessage.Date;
+		UnicodeString MessageJID = (wchar_t*)AddLineMessage.JID;
+		if(MessageJID.Pos("/")) MessageJID.Delete(MessageJID.Pos("/"),MessageJID.Length());
+		UnicodeString Body = (wchar_t*)AddLineMessage.Body;
+		Body = Body.Trim();
 
-	//Znaki HTMLowe
-	if(Body.Pos("&amp;")) Body = StringReplace(Body, "&amp;", "&", TReplaceFlags() << rfReplaceAll);
-	if(Body.Pos("&#12288;")) Body = StringReplace(Body, "&#12288;", " ", TReplaceFlags() << rfReplaceAll);
-	if(Body.Pos("&#039;")) { Body = StringReplace(Body, "&#039;", "'", TReplaceFlags() << rfReplaceAll); }
+		//Znaki HTMLowe
+		if(Body.Pos("&amp;")) Body = StringReplace(Body, "&amp;", "&", TReplaceFlags() << rfReplaceAll);
+		if(Body.Pos("&#12288;")) Body = StringReplace(Body, "&#12288;", " ", TReplaceFlags() << rfReplaceAll);
+		if(Body.Pos("&#039;")) { Body = StringReplace(Body, "&#039;", "'", TReplaceFlags() << rfReplaceAll); }
 
-	//Formatowanie tagow
-	while(Body.Pos("#"))
-	{
-		//Zmienne tymczasowe
-		UnicodeString TempStr = Body;
-		UnicodeString TempStr2 = Body;
-		//Sprawdzanie poprzedniego znaku/frazy
-		TempStr.Delete(TempStr.Pos("#"),TempStr.Length());
-		while(TempStr.Pos(" ")) TempStr.Delete(1,TempStr.Pos(" "));
-		//Sprawdzanie kolejnego znaku
-		TempStr2.Delete(1,TempStr2.Pos("#"));
-		TempStr2.Delete(2,TempStr2.Length());
-		//Jezeli fraza jest tagiem
-		if((AllowedTagsCharacters(TempStr2))
+		//Formatowanie tagow
+		while(Body.Pos("#"))
+		{
+			//Zmienne tymczasowe
+			UnicodeString TempStr = Body;
+			UnicodeString TempStr2 = Body;
+			//Sprawdzanie poprzedniego znaku/frazy
+			TempStr.Delete(TempStr.Pos("#"),TempStr.Length());
+			while(TempStr.Pos(" ")) TempStr.Delete(1,TempStr.Pos(" "));
+			//Sprawdzanie kolejnego znaku
+			TempStr2.Delete(1,TempStr2.Pos("#"));
+			TempStr2.Delete(2,TempStr2.Length());
+			//Jezeli fraza jest tagiem
+			if((AllowedTagsCharacters(TempStr2))
 			&&(TempStr.LowerCase().Pos("href=\"")==0)
 			&&(TempStr.LowerCase().Pos("title=\"http://")==0)
 			&&(TempStr.LowerCase().Pos("title=\"https://")==0)
 			&&(TempStr.LowerCase().Pos("title=\"www")==0))
-		{
-		//Usuwanie hasha z tagu
-		UnicodeString TagWithOutHash = Body;
-		TagWithOutHash.Delete(1,TagWithOutHash.Pos("#"));
-		TagWithOutHash.Delete(TagsCutPosition(TagWithOutHash),TagWithOutHash.Length());
-		//Usuwanie polskich znakow
-		UnicodeString TagWithOutHashW = TagWithOutHash;
-		TagWithOutHashW = TagWithOutHashW.LowerCase();
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "ê", "e", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "ó", "o", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "¹", "a", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "œ", "s", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "³", "l", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "¿", "z", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "Ÿ", "z", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "æ", "c", TReplaceFlags() << rfReplaceAll);
-		TagWithOutHashW = StringReplace(TagWithOutHashW, "ñ", "n", TReplaceFlags() << rfReplaceAll);
-		//Tworzenie tagu
-		UnicodeString TagWithHash = "#" + TagWithOutHash;
-		//Formatowanie tagu
-		if((TagWithHash.Pos("-")==0)&&(TagWithHash.Pos("_")==0))
-		{
-			TagWithOutHashW = "[CC_TAGS_LINK]" + TagWithOutHashW + "[CC_TAGS_LINK2][CC_TAGS]" + TagWithOutHash + "[CC_TAGS_LINK3]";
-			Body = StringReplace(Body, TagWithHash, TagWithOutHashW, TReplaceFlags());
-		}
-		else
-		{
-			TagWithOutHashW = StringReplace(TagWithOutHashW, "-", "", TReplaceFlags() << rfReplaceAll);
-			TagWithOutHashW = StringReplace(TagWithOutHashW, "_", "", TReplaceFlags() << rfReplaceAll);
-			TagWithOutHashW = "[CC_TAGS_LINK]" + TagWithOutHashW + "[CC_TAGS_LINK2][CC_TAGS]" + TagWithOutHash + "[CC_TAGS_LINK3]";
-			Body = StringReplace(Body, TagWithHash, TagWithOutHashW, TReplaceFlags());
-		}
-		}
-		else Body = StringReplace(Body, "#", "[CC_TAGS]", TReplaceFlags());
-	}
-	Body = StringReplace(Body, "[CC_TAGS_LINK]", "<A HREF=\"http://aqq-link/?url=https://blabler.pl/tag/", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_TAGS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_TAGS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_TAGS]", "#", TReplaceFlags() << rfReplaceAll);
-
-	//Formatowanie u¿ytkownikow
-	while(Body.Pos("^"))
-	{
-		//Zmienne tymczasowe
-		UnicodeString TempStr = Body;
-		UnicodeString TempStr2 = Body;
-		//Sprawdzanie poprzedniego znaku/frazy
-		TempStr.Delete(TempStr.Pos("^"),TempStr.Length());
-		while(TempStr.Pos(" ")) TempStr.Delete(1,TempStr.Pos(" "));
-		//Sprawdzanie kolejnego znaku
-		TempStr2.Delete(1,TempStr2.Pos("^"));
-		TempStr2.Delete(2,TempStr2.Length());
-		//Jezeli fraza jest uzytkownikiem
-		if((AllowedUsersCharacters(TempStr2))
-			&&(TempStr.LowerCase().Pos("href=\"")==0)
-			&&(TempStr.LowerCase().Pos("title=\"http://")==0)
-			&&(TempStr.LowerCase().Pos("title=\"https://")==0)
-			&&(TempStr.LowerCase().Pos("title=\"www")==0))
-		{
-		//Usuwanie karety z frazy
-		UnicodeString UserWithOutCaret = Body;
-		UserWithOutCaret.Delete(1,UserWithOutCaret.Pos("^"));
-		UserWithOutCaret.Delete(UsersCutPosition(UserWithOutCaret),UserWithOutCaret.Length());
-		//Fraza z kareta
-		UnicodeString UserWithCaret = "^" + UserWithOutCaret;
-		//Poprawna forma uzytkownika
-		if(UserWithCaret.Length()>2)
-		{
-			//Formatowanie linku
-			UserWithOutCaret = "[CC_USERS_LINK]" + UserWithOutCaret + "[CC_USERS_LINK2][CC_USERS]" + UserWithOutCaret + "[CC_USERS_LINK3]";
-			Body = StringReplace(Body, UserWithCaret, UserWithOutCaret, TReplaceFlags());
-		}
-		else
-		{
-					UserWithOutCaret = "[CC_USERS]" + UserWithOutCaret;
-			Body = StringReplace(Body, UserWithCaret, UserWithOutCaret, TReplaceFlags());
+			{
+				//Usuwanie hasha z tagu
+				UnicodeString TagWithOutHash = Body;
+				TagWithOutHash.Delete(1,TagWithOutHash.Pos("#"));
+				TagWithOutHash.Delete(TagsCutPosition(TagWithOutHash),TagWithOutHash.Length());
+				//Usuwanie polskich znakow
+				UnicodeString TagWithOutHashW = TagWithOutHash;
+				TagWithOutHashW = TagWithOutHashW.LowerCase();
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "ê", "e", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "ó", "o", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "¹", "a", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "œ", "s", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "³", "l", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "¿", "z", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "Ÿ", "z", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "æ", "c", TReplaceFlags() << rfReplaceAll);
+				TagWithOutHashW = StringReplace(TagWithOutHashW, "ñ", "n", TReplaceFlags() << rfReplaceAll);
+				//Tworzenie tagu
+				UnicodeString TagWithHash = "#" + TagWithOutHash;
+				//Formatowanie tagu
+				if((TagWithHash.Pos("-")==0)&&(TagWithHash.Pos("_")==0))
+				{
+					TagWithOutHashW = "[CC_TAGS_LINK]" + TagWithOutHashW + "[CC_TAGS_LINK2][CC_TAGS]" + TagWithOutHash + "[CC_TAGS_LINK3]";
+					Body = StringReplace(Body, TagWithHash, TagWithOutHashW, TReplaceFlags());
 				}
+				else
+				{
+					TagWithOutHashW = StringReplace(TagWithOutHashW, "-", "", TReplaceFlags() << rfReplaceAll);
+					TagWithOutHashW = StringReplace(TagWithOutHashW, "_", "", TReplaceFlags() << rfReplaceAll);
+					TagWithOutHashW = "[CC_TAGS_LINK]" + TagWithOutHashW + "[CC_TAGS_LINK2][CC_TAGS]" + TagWithOutHash + "[CC_TAGS_LINK3]";
+					Body = StringReplace(Body, TagWithHash, TagWithOutHashW, TReplaceFlags());
+				}
+			}
+			else Body = StringReplace(Body, "#", "[CC_TAGS]", TReplaceFlags());
 		}
-		else Body = StringReplace(Body, "^", "[CC_USERS]", TReplaceFlags());
-	}
-	Body = StringReplace(Body, "[CC_USERS_LINK]", "<A HREF=\"http://aqq-link/?url=https://blabler.pl/u/", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_USERS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_USERS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
-	Body = StringReplace(Body, "[CC_USERS]", "^", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_TAGS_LINK]", "<A HREF=\"http://aqq-link/?url=https://blabler.pl/tag/", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_TAGS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_TAGS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_TAGS]", "#", TReplaceFlags() << rfReplaceAll);
 
-	//Tworzenie odnosnika dla nadawcy wiadomosci
-	if(ContactJID==MessageJID)
-	{
-		//Wyciaganie pierwszej frazy wiadomosci
-		UnicodeString TempStr = Body;
-		while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
-		//Fraza jest nadawca wiadomosci
-		if(TempStr.Pos(":")==TempStr.Length())
+		//Formatowanie u¿ytkownikow
+		while(Body.Pos("^"))
 		{
-		//Tworzenie odnosnika
-		TempStr.SetLength(TempStr.Length()-1);
-		Body = StringReplace(Body, TempStr + ":", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>:", TReplaceFlags());
-		//Zapamietywanie nadawcy wiadomosci
-		BlablerSender = TempStr;
-		//Skip
-		goto SkipFormatSender;
+			//Zmienne tymczasowe
+			UnicodeString TempStr = Body;
+			UnicodeString TempStr2 = Body;
+			//Sprawdzanie poprzedniego znaku/frazy
+			TempStr.Delete(TempStr.Pos("^"),TempStr.Length());
+			while(TempStr.Pos(" ")) TempStr.Delete(1,TempStr.Pos(" "));
+			//Sprawdzanie kolejnego znaku
+			TempStr2.Delete(1,TempStr2.Pos("^"));
+			TempStr2.Delete(2,TempStr2.Length());
+			//Jezeli fraza jest uzytkownikiem
+			if((AllowedUsersCharacters(TempStr2))
+			&&(TempStr.LowerCase().Pos("href=\"")==0)
+			&&(TempStr.LowerCase().Pos("title=\"http://")==0)
+			&&(TempStr.LowerCase().Pos("title=\"https://")==0)
+			&&(TempStr.LowerCase().Pos("title=\"www")==0))
+			{
+				//Usuwanie karety z frazy
+				UnicodeString UserWithOutCaret = Body;
+				UserWithOutCaret.Delete(1,UserWithOutCaret.Pos("^"));
+				UserWithOutCaret.Delete(UsersCutPosition(UserWithOutCaret),UserWithOutCaret.Length());
+				//Fraza z kareta
+				UnicodeString UserWithCaret = "^" + UserWithOutCaret;
+				//Poprawna forma uzytkownika
+				if(UserWithCaret.Length()>2)
+				{
+					//Formatowanie linku
+					UserWithOutCaret = "[CC_USERS_LINK]" + UserWithOutCaret + "[CC_USERS_LINK2][CC_USERS]" + UserWithOutCaret + "[CC_USERS_LINK3]";
+					Body = StringReplace(Body, UserWithCaret, UserWithOutCaret, TReplaceFlags());
+				}
+				else
+				{
+					UserWithOutCaret = "[CC_USERS]" + UserWithOutCaret;
+					Body = StringReplace(Body, UserWithCaret, UserWithOutCaret, TReplaceFlags());
+				}
+			}
+			else Body = StringReplace(Body, "^", "[CC_USERS]", TReplaceFlags());
 		}
-	}
-	//Tworzenie odnosnika dla nadawcy wiadomosci prywatnej
-	if((Body.Pos(" &gt;&gt; "))
+		Body = StringReplace(Body, "[CC_USERS_LINK]", "<A HREF=\"http://aqq-link/?url=https://blabler.pl/u/", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_USERS_LINK2]", ".html\">", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_USERS_LINK3]", "</A>", TReplaceFlags() << rfReplaceAll);
+		Body = StringReplace(Body, "[CC_USERS]", "^", TReplaceFlags() << rfReplaceAll);
+
+		//Tworzenie odnosnika dla nadawcy wiadomosci
+		if(ContactJID==MessageJID)
+		{
+			//Wyciaganie pierwszej frazy wiadomosci
+			UnicodeString TempStr = Body;
+			while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
+			//Fraza jest nadawca wiadomosci
+			if(TempStr.Pos(":")==TempStr.Length())
+			{
+				//Tworzenie odnosnika
+				TempStr.SetLength(TempStr.Length()-1);
+				Body = StringReplace(Body, TempStr + ":", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>:", TReplaceFlags());
+				//Zapamietywanie nadawcy wiadomosci
+				BlablerSender = TempStr;
+				//Skip
+				goto SkipFormatSender;
+			}
+		}
+		//Tworzenie odnosnika dla nadawcy wiadomosci prywatnej
+		if((Body.Pos(" &gt;&gt; "))
 		&&(Body.Pos(": "))
 		&&(Body.Pos(" &gt;&gt; ")<Body.Pos(": "))
 		&&(ContactJID==MessageJID))
-	{
-		//Pobieranie nadawacy i odbiorcy wiadomosci
-		UnicodeString TempStr = Body;
-		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		TempStr = StringReplace(TempStr, " &gt;&gt; " , "", TReplaceFlags());
-		//Fraza jest nadawca i odbiorca wiadomosci
-		if(!TempStr.Pos(" "))
 		{
-		//Tworzenie odnosnika nadawcy wiadomosci
-		TempStr = Body;
-		TempStr.Delete(TempStr.Pos(" &gt;&gt; "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + " &gt;&gt; ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt;&gt; ", TReplaceFlags());
-		//Zapamietywanie nadawcy wiadomosci
-		BlablerSender = TempStr;
-		//Tworzenie odnosnika odbiorcy wiadomosci
-		TempStr = Body;
-		TempStr.Delete(1,TempStr.Pos(" &gt;&gt; ")+9);
-		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
-		//Zapamietywanie odbiorcy wiadomosci
-		BlablerReceiver = TempStr;
+			//Pobieranie nadawacy i odbiorcy wiadomosci
+			UnicodeString TempStr = Body;
+			TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
+			TempStr = StringReplace(TempStr, " &gt;&gt; " , "", TReplaceFlags());
+			//Fraza jest nadawca i odbiorca wiadomosci
+			if(!TempStr.Pos(" "))
+			{
+				//Tworzenie odnosnika nadawcy wiadomosci
+				TempStr = Body;
+				TempStr.Delete(TempStr.Pos(" &gt;&gt; "),TempStr.Length());
+				Body = StringReplace(Body, TempStr + " &gt;&gt; ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt;&gt; ", TReplaceFlags());
+				//Zapamietywanie nadawcy wiadomosci
+				BlablerSender = TempStr;
+				//Tworzenie odnosnika odbiorcy wiadomosci
+				TempStr = Body;
+				TempStr.Delete(1,TempStr.Pos(" &gt;&gt; ")+9);
+				TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
+				Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
+				//Zapamietywanie odbiorcy wiadomosci
+				BlablerReceiver = TempStr;
+			}
 		}
-	}
-	//Tworzenie odnosnika dla odbiorcy wiadomosci prywatnej
-	else if((Body.Pos("&gt;&gt;")==1)&&(ContactJID!=MessageJID))
-	{
-		//Wyciaganie odbiorcy wiadomosci prywatnej
-		UnicodeString TempStr = Body;
-		while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
-		if(TempStr.Pos(":")==TempStr.Length())
-			TempStr.SetLength(TempStr.Length()-1);
-		TempStr.Delete(1,8);
-		//Tworzenie odnosnika
-		Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
-	}
-	//Tworzenie odnosnika dla nadawcy wiadomosci kierowanej
-	else if((Body.Pos(" &gt; "))
+		//Tworzenie odnosnika dla odbiorcy wiadomosci prywatnej
+		else if((Body.Pos("&gt;&gt;")==1)&&(ContactJID!=MessageJID))
+		{
+			//Wyciaganie odbiorcy wiadomosci prywatnej
+			UnicodeString TempStr = Body;
+			while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
+			if(TempStr.Pos(":")==TempStr.Length())
+				TempStr.SetLength(TempStr.Length()-1);
+			TempStr.Delete(1,8);
+			//Tworzenie odnosnika
+			Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+		}
+		//Tworzenie odnosnika dla nadawcy wiadomosci kierowanej
+		else if((Body.Pos(" &gt; "))
 		&&(Body.Pos(": "))
 		&&(Body.Pos(" &gt; ")<Body.Pos(": "))
 		&&(ContactJID==MessageJID))
-	{
-		//Pobieranie nadawacy i odbiorcy wiadomosci
-		UnicodeString TempStr = Body;
-		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		TempStr = StringReplace(TempStr, " &gt; " , "", TReplaceFlags());
-		//Fraza jest nadawca i odbiorca wiadomosci
-		if(!TempStr.Pos(" "))
 		{
-		//Tworzenie odnosnika nadawcy wiadomosci
-		TempStr = Body;
-		TempStr.Delete(TempStr.Pos(" &gt; "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + " &gt; ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt; ", TReplaceFlags());
-		//Zapamietywanie nadawcy wiadomosci
-		BlablerSender = TempStr;
-		//Tworzenie odnosnika odbiorcy wiadomosci
-		TempStr = Body;
-		TempStr.Delete(1,TempStr.Pos(" &gt; ")+5);
-		TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
-		Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
-		//Zapamietywanie odbiorcy wiadomosci
-		BlablerReceiver = TempStr;
+			//Pobieranie nadawacy i odbiorcy wiadomosci
+			UnicodeString TempStr = Body;
+			TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
+			TempStr = StringReplace(TempStr, " &gt; " , "", TReplaceFlags());
+			//Fraza jest nadawca i odbiorca wiadomosci
+			if(!TempStr.Pos(" "))
+			{
+				//Tworzenie odnosnika nadawcy wiadomosci
+				TempStr = Body;
+				TempStr.Delete(TempStr.Pos(" &gt; "),TempStr.Length());
+				Body = StringReplace(Body, TempStr + " &gt; ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B> &gt; ", TReplaceFlags());
+				//Zapamietywanie nadawcy wiadomosci
+				BlablerSender = TempStr;
+				//Tworzenie odnosnika odbiorcy wiadomosci
+				TempStr = Body;
+				TempStr.Delete(1,TempStr.Pos(" &gt; ")+5);
+				TempStr.Delete(TempStr.Pos(": "),TempStr.Length());
+				Body = StringReplace(Body, TempStr + ": ", "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>: ", TReplaceFlags());
+				//Zapamietywanie odbiorcy wiadomosci
+				BlablerReceiver = TempStr;
+			}
 		}
-	}
-	//Tworzenie odnosnika dla odbiorcy wiadomosci kierowanej
-	else if((Body.Pos("&gt;")==1)&&(ContactJID!=MessageJID))
-	{
-		//Wyciaganie odbiorcy wiadomosci prywatnej
-		UnicodeString TempStr = Body;
-		while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
-		if(TempStr.Pos(":")==TempStr.Length())
-			TempStr.SetLength(TempStr.Length()-1);
-		TempStr.Delete(1,4);
-		//Tworzenie odnosnika
-		Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
-	}
-	//"Wiadomoœæ wys³ana do XXX
-	else if((Body.Pos("Wiadomoœæ wys³ana do ")==1)&&(ContactJID==MessageJID))
-	{
+		//Tworzenie odnosnika dla odbiorcy wiadomosci kierowanej
+		else if((Body.Pos("&gt;")==1)&&(ContactJID!=MessageJID))
+		{
+			//Wyciaganie odbiorcy wiadomosci prywatnej
+			UnicodeString TempStr = Body;
+			while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
+			if(TempStr.Pos(":")==TempStr.Length())
+				TempStr.SetLength(TempStr.Length()-1);
+			TempStr.Delete(1,4);
+			//Tworzenie odnosnika
+			Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+		}
+		//"Wiadomoœæ wys³ana do XXX
+		else if((Body.Pos("Wiadomoœæ wys³ana do ")==1)&&(ContactJID==MessageJID))
+		{
 			//Wyciaganie nicku odbiorcy wiadomosci
-		UnicodeString TempStr = Body;
-		TempStr.Delete(1,TempStr.Pos("Wiadomoœæ wys³ana do ")+20);
-		while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
-		//Tworzenie odnosnika
-		Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
-	}
-	//Skip
-	SkipFormatSender: { /* Only Skip */ }
+			UnicodeString TempStr = Body;
+			TempStr.Delete(1,TempStr.Pos("Wiadomoœæ wys³ana do ")+20);
+			while(TempStr.Pos(" ")) TempStr.Delete(TempStr.Pos(" "),TempStr.Length());
+			//Tworzenie odnosnika
+			Body = StringReplace(Body, TempStr, "<B><A HREF=\"http://aqq-link/?url=https://blabler.pl/u/" + TempStr + ".html\">" + TempStr + "</A></B>", TReplaceFlags());
+		}
+		//Skip
+		SkipFormatSender: { /* Only Skip */ }
 
-	//Linkowanie obrazkow i dodawanie zalacznika
-	if(Body.Pos("[FOTO]"))
-	{
-		//Pobieranie ID wiadomosci
-		UnicodeString ID = Body;
-		ID.Delete(1,ID.Pos(" | <A HREF=\"")+2);
-		ID.Delete(ID.Pos("\">"),ID.Length());
-		while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
-		//Szukanie obrazka w cache
-		TIniFile *Ini = new TIniFile(CacheDir);
-		UnicodeString PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
-		delete Ini;
-		//Adres obrazka nie zapisany w cache
-		if(PhotoURL.IsEmpty())
+		//Linkowanie obrazkow i dodawanie zalacznika
+		if(Body.Pos("[FOTO]"))
 		{
-		//Pobieranie danych przez API
-		if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
-		{
-			//Ponowne szukanie obrazka w cache
+			//Pobieranie ID wiadomosci
+			UnicodeString ID = Body;
+			ID.Delete(1,ID.Pos(" | <A HREF=\"")+2);
+			ID.Delete(ID.Pos("\">"),ID.Length());
+			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+			//Szukanie obrazka w cache
 			TIniFile *Ini = new TIniFile(CacheDir);
-			PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
+			UnicodeString PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
 			delete Ini;
-		}
-		}
-		//Adres obrazka zapisany w cache
-		if(!PhotoURL.IsEmpty())
-		{
-		//Tworzenie odnosnika dla [FOTO]
-		Body = StringReplace(Body, "[FOTO]", "<A HREF=\"http://aqq-link/?url=" + PhotoURL + "\" title=\"" + PhotoURL + "\">[FOTO]</A>", TReplaceFlags());
-		//Emulacja zalacznika
-		if(!AttachmentStyle.IsEmpty())
-		{
-			//Styl zalacznika
-			UnicodeString Attachment = AttachmentStyle;
-			//Generowanie ID sesji
-			UnicodeString Session = (wchar_t*)(PluginLink.CallService(AQQ_FUNCTION_GETSTRID,0,0));
-			//Nazwa obrazka
-			UnicodeString PhotoFileName = PhotoURL;
-			while(PhotoFileName.Pos("/")) PhotoFileName.Delete(1,PhotoFileName.Pos("/"));
-			//Pobieranie sciezki URL do grafiki zalacznika
-			UnicodeString ThemePNGPath = (wchar_t*)(PluginLink.CallService(AQQ_FUNCTION_GETPNG_FILEPATH,40,0));
+			//Adres obrazka nie zapisany w cache
+			if(PhotoURL.IsEmpty())
+			{
+				//Pobieranie danych przez API
+				if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+				{
+					//Ponowne szukanie obrazka w cache
+					TIniFile *Ini = new TIniFile(CacheDir);
+					PhotoURL = Ini->ReadString(ConvertToInt(ID),"Attachment","");
+					delete Ini;
+				}
+			}
+			//Adres obrazka zapisany w cache
+			if(!PhotoURL.IsEmpty())
+			{
+				//Tworzenie odnosnika dla [FOTO]
+				Body = StringReplace(Body, "[FOTO]", "<A HREF=\"http://aqq-link/?url=" + PhotoURL + "\" title=\"" + PhotoURL + "\">[FOTO]</A>", TReplaceFlags());
+				//Emulacja zalacznika
+				if(!AttachmentStyle.IsEmpty())
+				{
+					//Styl zalacznika
+					UnicodeString Attachment = AttachmentStyle;
+					//Generowanie ID sesji
+					UnicodeString Session = (wchar_t*)(PluginLink.CallService(AQQ_FUNCTION_GETSTRID,0,0));
+					//Nazwa obrazka
+					UnicodeString PhotoFileName = PhotoURL;
+					while(PhotoFileName.Pos("/")) PhotoFileName.Delete(1,PhotoFileName.Pos("/"));
+					//Pobieranie sciezki URL do grafiki zalacznika
+					UnicodeString ThemePNGPath = (wchar_t*)(PluginLink.CallService(AQQ_FUNCTION_GETPNG_FILEPATH,40,0));
 					//Zamiana tagow stylu na dane
-			Attachment = StringReplace(Attachment, "CC_ATTACH_ICON", "<IMG border=0 src=\"" + ThemePNGPath + "\">", TReplaceFlags() << rfReplaceAll);
-			Attachment = StringReplace(Attachment, "CC_ATTACH_CAPTION", "<SPAN id=id_cctext>Za³¹cznik</SPAN>", TReplaceFlags() << rfReplaceAll);
-			Attachment = StringReplace(Attachment, "CC_ATTACH_SHORT", "<SPAN id=id_cctext><SPAN id=" + Session + "><A HREF=\"image:" + Session + ":" + PhotoURL + "\">" + PhotoFileName + "</A></SPAN></SPAN>", TReplaceFlags() << rfReplaceAll);
-			//Dodanie emulacji zalacznika
-			Body = Body + Attachment;
+					Attachment = StringReplace(Attachment, "CC_ATTACH_ICON", "<IMG border=0 src=\"" + ThemePNGPath + "\">", TReplaceFlags() << rfReplaceAll);
+					Attachment = StringReplace(Attachment, "CC_ATTACH_CAPTION", "<SPAN id=id_cctext>Za³¹cznik</SPAN>", TReplaceFlags() << rfReplaceAll);
+					Attachment = StringReplace(Attachment, "CC_ATTACH_SHORT", "<SPAN id=id_cctext><SPAN id=" + Session + "><A HREF=\"image:" + Session + ":" + PhotoURL + "\">" + PhotoFileName + "</A></SPAN></SPAN>", TReplaceFlags() << rfReplaceAll);
+					//Dodanie emulacji zalacznika
+					Body = Body + Attachment;
 				}
-		}
+			}
 		}
 
-	//Wyroznianie wiadomosci
-	if((HighlightMsgChk)&&(ContactJID==MessageJID))
-	{
-		//Jezeli sa jakies elemnty do wyrozniania
-		if(HighlightMsgItemsList->Count)
+		//Wyroznianie wiadomosci
+		if((HighlightMsgChk)&&(ContactJID==MessageJID))
 		{
-		//Petla wyrozniania wszystkich dodanych fraz
-		for(int Count=0;Count<HighlightMsgItemsList->Count;Count++)
-		{
-			//Pobieranie danych odnosnie
-			UnicodeString Item = HighlightMsgItemsList->Strings[Count];
-			UnicodeString Color = HighlightMsgColorsList->ReadString("Color",Item,"");
-			//Zmiana koloru tekstu (tryb I)
-			if(HighlightMsgModeChk==0)
+			//Jezeli sa jakies elemnty do wyrozniania
+			if(HighlightMsgItemsList->Count)
 			{
-			//Wyrozanie tagow
-			if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
-			{
-				UnicodeString ItemBody = Body;
-				ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
-				ItemBody.SetLength(1);
-				if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
+				//Petla wyrozniania wszystkich dodanych fraz
+				for(int Count=0;Count<HighlightMsgItemsList->Count;Count++)
 				{
-				Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+					//Pobieranie danych odnosnie
+					UnicodeString Item = HighlightMsgItemsList->Strings[Count];
+					UnicodeString Color = HighlightMsgColorsList->ReadString("Color",Item,"");
+					//Zmiana koloru tekstu (tryb I)
+					if(HighlightMsgModeChk==0)
+					{
+						//Wyrozanie tagow
+						if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
+						{
+							UnicodeString ItemBody = Body;
+							ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
+							ItemBody.SetLength(1);
+							if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
+							{
+								Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanianie uzytkownikow
+						else if(Item.Pos("^")==1)
+						{
+							UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
+							if((Body.LowerCase().Pos(Item.LowerCase()))
+							||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
+							||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
+							{
+								Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanie dowolnych fraz
+						else if(Body.LowerCase().Pos(Item.LowerCase()))
+						{
+							Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
+							Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+						}
+					}
+					//Zmiana koloru tekstu (tryb II)
+					else if(HighlightMsgModeChk==1)
+					{
+						//Wyrozanie tagow
+						if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
+						{
+							UnicodeString ItemBody = Body;
+							ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
+							ItemBody.SetLength(1);
+							if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
+							{
+								UnicodeString SelectorID = "MSG" + MessageDate;
+								SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+								Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanianie uzytkownikow
+						else if(Item.Pos("^")==1)
+						{
+							UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
+							if((Body.LowerCase().Pos(Item.LowerCase()))
+							||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
+							||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
+							{
+								UnicodeString SelectorID = "MSG" + MessageDate;
+								SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+								Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanie dowolnych fraz
+						else if(Body.LowerCase().Pos(Item.LowerCase()))
+						{
+							UnicodeString SelectorID = "MSG" + MessageDate;
+							SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+							Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
+							Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+						}
+					}
+					//Zmiana koloru frazy
+					else if(HighlightMsgModeChk==2)
+					{
+						//Wyrozanie tagow
+						if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
+						{
+							UnicodeString ItemBody = Body;
+							ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
+							ItemBody.SetLength(1);
+							if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
+							{
+								UnicodeString SelectorID = "MSG" + MessageDate;
+								SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+								Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
+								int Pos = Body.LowerCase().Pos(Item.LowerCase());
+								Body = Body.Insert("</span>",Pos+Item.Length());
+								Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanianie uzytkownikow
+						else if(Item.Pos("^")==1)
+						{
+							//Wyrozanie nadawcow wiadomosci
+							UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
+							if((ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
+							{
+								UnicodeString SelectorID = "MSG" + MessageDate;
+								SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+								Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
+								int Pos = Body.LowerCase().Pos((ItemWithOutCaret.LowerCase()+"</a>"));
+								Body = Body.Insert("</span>",Pos+ItemWithOutCaret.Length());
+								Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+							//Wyroznianie zacytowanych uzytkownikow
+							if(Body.LowerCase().Pos(Item.LowerCase()))
+							{
+								UnicodeString SelectorID = "MSG" + MessageDate;
+								SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
+								Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
+								int Pos = Body.LowerCase().Pos(Item.LowerCase());
+								Body = Body.Insert("</span>",Pos+Item.Length());
+								Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+					}
+					//Zmiana koloru pola wiadomosci
+					else if(HighlightMsgModeChk==3)
+					{
+						//Wyrozanie tagow
+						if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
+						{
+							UnicodeString ItemBody = Body;
+							ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
+							ItemBody.SetLength(1);
+							if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
+							{
+								Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanianie uzytkownikow
+						else if(Item.Pos("^")==1)
+						{
+							UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
+							if((Body.LowerCase().Pos(Item.LowerCase()))
+							||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
+							||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
+							{
+								Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
+								Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+							}
+						}
+						//Wyrozanie dowolnych fraz
+						else if(Body.LowerCase().Pos(Item.LowerCase()))
+						{
+							Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
+							Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
+						}
+					}
 				}
-			}
-			//Wyrozanianie uzytkownikow
-			else if(Item.Pos("^")==1)
-			{
-				UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
-				if((Body.LowerCase().Pos(Item.LowerCase()))
-					||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
-					||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
-				{
-				Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanie dowolnych fraz
-			else if(Body.LowerCase().Pos(Item.LowerCase()))
-			{
-				Body = "<div style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-			}
-			}
-			//Zmiana koloru tekstu (tryb II)
-			else if(HighlightMsgModeChk==1)
-			{
-			//Wyrozanie tagow
-			if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
-			{
-				UnicodeString ItemBody = Body;
-				ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
-				ItemBody.SetLength(1);
-				if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
-				{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanianie uzytkownikow
-			else if(Item.Pos("^")==1)
-			{
-				UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
-				if((Body.LowerCase().Pos(Item.LowerCase()))
-					||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
-					||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
-				{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanie dowolnych fraz
-			else if(Body.LowerCase().Pos(Item.LowerCase()))
-			{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style><div id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-			}
-			}
-			//Zmiana koloru frazy
-			else if(HighlightMsgModeChk==2)
-			{
-			//Wyrozanie tagow
-			if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
-			{
-				UnicodeString ItemBody = Body;
-				ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
-				ItemBody.SetLength(1);
-				if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
-				{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
-				int Pos = Body.LowerCase().Pos(Item.LowerCase());
-				Body = Body.Insert("</span>",Pos+Item.Length());
-				Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanianie uzytkownikow
-			else if(Item.Pos("^")==1)
-			{
-				//Wyrozanie nadawcow wiadomosci
-				UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
-				if((ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
-				{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
-				int Pos = Body.LowerCase().Pos((ItemWithOutCaret.LowerCase()+"</a>"));
-				Body = Body.Insert("</span>",Pos+ItemWithOutCaret.Length());
-				Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-				//Wyroznianie zacytowanych uzytkownikow
-				if(Body.LowerCase().Pos(Item.LowerCase()))
-				{
-				UnicodeString SelectorID = "MSG" + MessageDate;
-				SelectorID = StringReplace(SelectorID, ",", "", TReplaceFlags() << rfReplaceAll);
-				Body = "<style>#" + SelectorID + " a { color: CC_COLOR; }</style>" + Body;
-				int Pos = Body.LowerCase().Pos(Item.LowerCase());
-				Body = Body.Insert("</span>",Pos+Item.Length());
-				Body = Body.Insert("<span id=\"" + SelectorID + "\" style=\"color: CC_COLOR;\">",Pos);
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			}
-			//Zmiana koloru pola wiadomosci
-			else if(HighlightMsgModeChk==3)
-			{
-			//Wyrozanie tagow
-			if((Item.Pos("#")==1)&&(Body.LowerCase().Pos(Item.LowerCase())))
-			{
-				UnicodeString ItemBody = Body;
-				ItemBody.Delete(1,ItemBody.LowerCase().Pos(Item.LowerCase())+Item.Length()-1);
-				ItemBody.SetLength(1);
-				if((ItemBody.IsEmpty())||(ItemBody==" ")||(ItemBody=="<"))
-				{
-				Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanianie uzytkownikow
-			else if(Item.Pos("^")==1)
-			{
-				UnicodeString ItemWithOutCaret = StringReplace(Item, "^", "", TReplaceFlags());
-				if((Body.LowerCase().Pos(Item.LowerCase()))
-					||(ItemWithOutCaret.LowerCase()==BlablerSender.LowerCase())
-					||(ItemWithOutCaret.LowerCase()==BlablerReceiver.LowerCase()))
-				{
-				Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-				}
-			}
-			//Wyrozanie dowolnych fraz
-			else if(Body.LowerCase().Pos(Item.LowerCase()))
-			{
-				Body = "<div style=\"padding-bottom: 4px; margin: -4px; border: 4px solid CC_COLOR; border-bottom: 0px; background: none repeat scroll 0 0 CC_COLOR;\">" + Body + "</div>";
-				Body = StringReplace(Body, "CC_COLOR", Color, TReplaceFlags() << rfReplaceAll);
-			}
 			}
 		}
-		}
-	}
 
-	//Zacytowane wiadomosci
-	if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/"))
-	||(Body.Pos("https://blabler.pl/s/"))||(Body.Pos("https://blabler.pl/dm/"))||(Body.Pos("https://blabler.pl/pm/")))
-	{
-		//Dodawanie specjalnych tagow do wszystkich linkow
-		Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
-		Body = StringReplace(Body, "</A>", "</A>[CC_LINK_END]", TReplaceFlags() << rfReplaceAll);
-		while(Body.Pos("[CC_LINK_END]"))
-		{
-		//Wyciagniecie kodu HTML odnosnika
-		UnicodeString URL = Body;
-		URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
-		URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
 		//Zacytowane wiadomosci
-		if(((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/"))||(URL.Pos("https://blabler.pl/s/"))||(URL.Pos("https://blabler.pl/dm/"))||(URL.Pos("https://blabler.pl/pm/")))&&(Body.Pos(" | [CC_LINK_START]"+URL)==0))
+		if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/"))
+		||(Body.Pos("https://blabler.pl/s/"))||(Body.Pos("https://blabler.pl/dm/"))||(Body.Pos("https://blabler.pl/pm/")))
 		{
-			//Odnosnik z parametrem title
-			if(URL.Pos("title="))
+			//Dodawanie specjalnych tagow do wszystkich linkow
+			Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
+			Body = StringReplace(Body, "</A>", "</A>[CC_LINK_END]", TReplaceFlags() << rfReplaceAll);
+			while(Body.Pos("[CC_LINK_END]"))
 			{
-			//Wyciaganie zawartosci title
-			UnicodeString Title = URL;
-			Title.Delete(1,Title.Pos("title=\"")+6);
-			Title.Delete(Title.Pos("\""),Title.Length());
-			//Wyciaganie ID wiadomosci
-			UnicodeString ID = Title;
-			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
-			//Szukanie wiadomosci w cache
-			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
-			delete Ini;
-			//Wiadomosc nie zapisana w cache
-			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
-			{
-				//Pobieranie danych przez API
-				if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+				//Wyciagniecie kodu HTML odnosnika
+				UnicodeString URL = Body;
+				URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
+				URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
+				//Zacytowane wiadomosci
+				if(((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/"))||(URL.Pos("https://blabler.pl/s/"))||(URL.Pos("https://blabler.pl/dm/"))||(URL.Pos("https://blabler.pl/pm/")))&&(Body.Pos(" | [CC_LINK_START]"+URL)==0))
 				{
-				//Ponowne szukanie wiadomosci w cache
-				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-				From = Ini->ReadString(ConvertToInt(ID),"From","");
-				delete Ini;
+					//Odnosnik z parametrem title
+					if(URL.Pos("title="))
+					{
+						//Wyciaganie zawartosci title
+						UnicodeString Title = URL;
+						Title.Delete(1,Title.Pos("title=\"")+6);
+						Title.Delete(Title.Pos("\""),Title.Length());
+						//Wyciaganie ID wiadomosci
+						UnicodeString ID = Title;
+						while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+						//Szukanie wiadomosci w cache
+						TIniFile *Ini = new TIniFile(CacheDir);
+						UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+						UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
+						delete Ini;
+						//Wiadomosc nie zapisana w cache
+						if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+						{
+							//Pobieranie danych przez API
+							if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+							{
+								//Ponowne szukanie wiadomosci w cache
+								TIniFile *Ini = new TIniFile(CacheDir);
+								QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+								From = Ini->ReadString(ConvertToInt(ID),"From","");
+								delete Ini;
+							}
+						}
+						//Wiadomosc zapisana w cache
+						if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+						{
+							//Formatowanie tresci zacytowanej wiadomosci
+							QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+							//Podmiana danych w odnosniku
+							UnicodeString tmpURL = URL;
+							tmpURL = StringReplace(tmpURL, "title=\""+Title+"\"", "title=\""+QuoteBody+"\"", TReplaceFlags());
+							tmpURL = StringReplace(tmpURL, "[blabler.pl]", "[^"+From+"]", TReplaceFlags());
+							Body = StringReplace(Body, URL, tmpURL, TReplaceFlags());
+						}
+					}
+					//Odnosnik bez parametru title
+					else
+					{
+						//Wyciaganie ID wiadomosci
+						UnicodeString ID = URL;
+						ID.Delete(1,ID.Pos(">"));
+						ID.Delete(ID.Pos("<"),ID.Length());
+						URL = ID;
+						while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+						//Szukanie wiadomosci w cache
+						TIniFile *Ini = new TIniFile(CacheDir);
+						UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));;
+						UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
+						delete Ini;
+						//Wiadomosc nie zapisana w cache
+						if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+						{
+							//Pobieranie danych przez API
+							if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+							{
+								//Ponowne szukanie wiadomosci w cache
+								TIniFile *Ini = new TIniFile(CacheDir);
+								QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+								From = Ini->ReadString(ConvertToInt(ID),"From","");
+								delete Ini;
+							}
+						}
+						//Wiadomosc zapisana w cache
+						if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+						{
+							//Formatowanie tresci zacytowanej wiadomosci
+							QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+							//Podmiana danych w odnosniku
+							Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+QuoteBody+"\">[^"+From+"]", TReplaceFlags());
+						}
+						//Pernamentny brak zapisanej wiadomosci w cache
+						else
+						{
+							//Podmiana danych w odnosniku
+							Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+URL+"\">[blabler.pl]", TReplaceFlags());
+						}
+					}
 				}
-			}
-			//Wiadomosc zapisana w cache
-			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
-			{
-				//Formatowanie tresci zacytowanej wiadomosci
-				QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
-				//Podmiana danych w odnosniku
-				UnicodeString tmpURL = URL;
-				tmpURL = StringReplace(tmpURL, "title=\""+Title+"\"", "title=\""+QuoteBody+"\"", TReplaceFlags());
-				tmpURL = StringReplace(tmpURL, "[blabler.pl]", "[^"+From+"]", TReplaceFlags());
-				Body = StringReplace(Body, URL, tmpURL, TReplaceFlags());
-			}
-			}
-			//Odnosnik bez parametru title
-			else
-			{
-			//Wyciaganie ID wiadomosci
-			UnicodeString ID = URL;
-			ID.Delete(1,ID.Pos(">"));
-			ID.Delete(ID.Pos("<"),ID.Length());
-			URL = ID;
-			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
-			//Szukanie wiadomosci w cache
-			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));;
-			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
-			delete Ini;
-			//Wiadomosc nie zapisana w cache
-			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
-			{
-				//Pobieranie danych przez API
-				if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+				//Skracanie koncowki wiadomosci
+				else if((Body.Pos(" | [CC_LINK_START]"+URL))&&(URL.Pos("title=")==0))
 				{
-				//Ponowne szukanie wiadomosci w cache
-				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-				From = Ini->ReadString(ConvertToInt(ID),"From","");
-				delete Ini;
+					//Wyciaganie adresu URL
+					URL.Delete(1,URL.Pos(">"));
+					URL.Delete(URL.Pos("<"),URL.Length());
+					//Podmiana danych w odnosniku
+					Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+URL+"\">[blabler.pl]", TReplaceFlags());
 				}
-			}
-			//Wiadomosc zapisana w cache
-			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
-			{
-				//Formatowanie tresci zacytowanej wiadomosci
-				QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
-				//Podmiana danych w odnosniku
-				Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+QuoteBody+"\">[^"+From+"]", TReplaceFlags());
-			}
-			//Pernamentny brak zapisanej wiadomosci w cache
-			else
-			{
-				//Podmiana danych w odnosniku
-				Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+URL+"\">[blabler.pl]", TReplaceFlags());
-			}
+				//Usuwanie wczesniej dodanych tagow
+				Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
+				Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
 			}
 		}
-		//Skracanie koncowki wiadomosci
-		else if((Body.Pos(" | [CC_LINK_START]"+URL))&&(URL.Pos("title=")==0))
-		{
-			//Wyciaganie adresu URL
-			URL.Delete(1,URL.Pos(">"));
-			URL.Delete(URL.Pos("<"),URL.Length());
-			//Podmiana danych w odnosniku
-			Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+URL+"\">[blabler.pl]", TReplaceFlags());
-		}
-		//Usuwanie wczesniej dodanych tagow
-		Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
-		Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
-		}
-	}
 
-	//Dodawanie awatarow
-	if((ContactJID==MessageJID)&&(!BlablerSender.IsEmpty()))
-	{
-		//Tworzenie katalogu z awatarami
-		if(!DirectoryExists(AvatarsDir))
-			CreateDir(AvatarsDir);
-		//Zmienna awataru
-		UnicodeString Avatars;
-		//Awatara nie ma w folderze cache
-		if(!FileExists(AvatarsDir + "\\\\" + BlablerSender))
+		//Dodawanie awatarow
+		if((ContactJID==MessageJID)&&(!BlablerSender.IsEmpty()))
 		{
-		//Wstawienie online'owego awatara
-		Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerSender + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
-		//Dodanie awatara do pobrania
-		GetAvatarsList->Add(BlablerSender);
-		//Wlaczenie watku
-		if(!hBlablerForm->GetAvatarsThread->Active) hBlablerForm->GetAvatarsThread->Start();
-		}
-		//Awatar znajduje sie w folderze cache
-		else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerSender + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
-		//Dodanie awatar(a/ow) do tresci wiadomosci
-		Body = Avatars + Body;
-		//Awatar dla odbiorcy wiadomosci
-		if(!BlablerReceiver.IsEmpty())
-		{
+			//Tworzenie katalogu z awatarami
+			if(!DirectoryExists(AvatarsDir))
+				CreateDir(AvatarsDir);
+			//Zmienna awataru
+			UnicodeString Avatars;
+			//Awatara nie ma w folderze cache
+			if(!FileExists(AvatarsDir + "\\\\" + BlablerSender))
+			{
+				//Wstawienie online'owego awatara
+				Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerSender + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+				//Dodanie awatara do pobrania
+				GetAvatarsList->Add(BlablerSender);
+				//Przypisanie uchwytu do formy ustawien
+				if(!hSettingsForm)
+				{
+					Application->Handle = (HWND)SettingsForm;
+					hSettingsForm = new TSettingsForm(Application);
+				}
+				//Wlaczenie watku
+				if(!hSettingsForm->GetAvatarsThread->Active) hSettingsForm->GetAvatarsThread->Start();
+			}
+			//Awatar znajduje sie w folderze cache
+			else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerSender + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerSender + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+			//Dodanie awatar(a/ow) do tresci wiadomosci
+			Body = Avatars + Body;
+			//Awatar dla odbiorcy wiadomosci
+			if(!BlablerReceiver.IsEmpty())
+			{
 				//Awatara nie ma w folderze cache
-		if(!FileExists(AvatarsDir + "\\\\" + BlablerReceiver))
-		{
-			//Wstawienie online'owego awatara
-			Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerReceiver + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
-			//Dodanie awatara do pobrania
-			GetAvatarsList->Add(BlablerReceiver);
-			//Wlaczenie watku
-			if(!hBlablerForm->GetAvatarsThread->Active) hBlablerForm->GetAvatarsThread->Start();
+				if(!FileExists(AvatarsDir + "\\\\" + BlablerReceiver))
+				{
+					//Wstawienie online'owego awatara
+					Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"http://api.blabler.pl/avatar/" + BlablerReceiver + "/standard\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+					//Dodanie awatara do pobrania
+					GetAvatarsList->Add(BlablerReceiver);
+					//Przypisanie uchwytu do formy ustawien
+					if(!hSettingsForm)
+					{
+						Application->Handle = (HWND)SettingsForm;
+						hSettingsForm = new TSettingsForm(Application);
+					}
+					//Wlaczenie watku
+					if(!hSettingsForm->GetAvatarsThread->Active) hSettingsForm->GetAvatarsThread->Start();
+				}
+				//Awatar znajduje sie w folderze cache
+				else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerReceiver + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
+				//Wstawienie awataru do tresci wiadomosci
+				Body = StringReplace(Body, "&gt; ", "&gt;<span style=\"padding-left: 2px;\"></span>"+Avatars, TReplaceFlags());
+			}
 		}
-		//Awatar znajduje sie w folderze cache
-		else Avatars = StringReplace(AvatarStyle, "CC_AVATAR", "<a href=\"http://aqq-link/?url=https://blabler.pl/u/" + BlablerReceiver + ".html\"><img class=\"blabler-avatar\" border=\"0px\" src=\"file:///" + AvatarsDirW + "/" + BlablerReceiver + "\" width=\"" + IntToStr(AvatarSize) + "px\" height=\"" + IntToStr(AvatarSize) + "px\"></a>", TReplaceFlags() << rfReplaceAll);
-		//Wstawienie awataru do tresci wiadomosci
-		Body = StringReplace(Body, "&gt; ", "&gt;<span style=\"padding-left: 2px;\"></span>"+Avatars, TReplaceFlags());
-		}
-	}
 
-	//Zwrocenie zmodyfikowanej wiadomosci;
-	AddLineMessage.Body = Body.w_str();
-	memcpy((PPluginMessage)lParam,&AddLineMessage, sizeof(TPluginMessage));
-	return 2;
-	}
-	//Zacytowane wiadomosci poza botem Blablera
-	else
-	{
-	//Pobieranie informacji o wiadomosci
-	TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
-	UnicodeString Body = (wchar_t*)AddLineMessage.Body;
-	Body = Body.Trim();
-	//Tekst zawiera zacytowane wiadomosci
-	if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/"))
-	||(Body.Pos("https://blabler.pl/s/"))||(Body.Pos("https://blabler.pl/dm/"))||(Body.Pos("https://blabler.pl/pm/")))
-	{
-		//Dodawanie specjalnych tagow do wszystkich linkow
-		Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
-		Body = StringReplace(Body, "</A>", "</A>[CC_LINK_END]", TReplaceFlags() << rfReplaceAll);
-		while(Body.Pos("[CC_LINK_END]"))
-		{
-		//Wyciagniecie kodu HTML odnosnika
-		UnicodeString URL = Body;
-		URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
-		URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
-		//Zacytowane wiadomosci
-		if((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/"))
-		||(URL.Pos("https://blabler.pl/s/"))||(URL.Pos("https://blabler.pl/dm/"))||(URL.Pos("https://blabler.pl/pm/")))
-		{
-			//Odnosnik z parametrem title
-			if(URL.Pos("title="))
-			{
-			//Wyciaganie zawartosci title
-			UnicodeString Title = URL;
-			Title.Delete(1,Title.Pos("title=\"")+6);
-			Title.Delete(Title.Pos("\""),Title.Length());
-			//Wyciaganie ID wiadomosci
-			UnicodeString ID = Title;
-			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
-			//Szukanie wiadomosci w cache
-			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
-			delete Ini;
-			//Wiadomosc nie zapisana w cache
-			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
-			{
-				//Pobieranie danych przez API
-				if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
-				{
-				//Ponowne szukanie wiadomosci w cache
-				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-				From = Ini->ReadString(ConvertToInt(ID),"From","");
-				delete Ini;
-				}
-			}
-			//Wiadomosc zapisana w cache
-			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
-			{
-				//Formatowanie tresci zacytowanej wiadomosci
-				QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
-				//Podmiana danych w odnosniku
-				UnicodeString tmpURL = URL;
-				tmpURL = StringReplace(tmpURL, "title=\""+Title+"\"", "title=\""+From+": "+QuoteBody+"\"", TReplaceFlags());
-				Body = StringReplace(Body, URL, tmpURL, TReplaceFlags());
-			}
-			}
-			//Odnosnik bez parametru title
-			else
-			{
-			//Wyciaganie ID wiadomosci
-			UnicodeString ID = URL;
-			ID.Delete(1,ID.Pos(">"));
-			ID.Delete(ID.Pos("<"),ID.Length());
-			URL = ID;
-			while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
-			//Szukanie wiadomosci w cache
-			TIniFile *Ini = new TIniFile(CacheDir);
-			UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-			UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
-			delete Ini;
-			//Wiadomosc nie zapisana w cache
-			if((QuoteBody.IsEmpty())||(From.IsEmpty()))
-			{
-				//Pobieranie danych przez API
-				if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
-				{
-				//Ponowne szukanie wiadomosci w cache
-				TIniFile *Ini = new TIniFile(CacheDir);
-				QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
-				From = Ini->ReadString(ConvertToInt(ID),"From","");
-				delete Ini;
-				}
-			}
-			//Wiadomosc zapisana w cache
-			if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
-			{
-				//Formatowanie tresci zacytowanej wiadomosci
-				QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
-				QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
-				//Podmiana danych w odnosniku
-				Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+From+": "+QuoteBody+"\">"+URL, TReplaceFlags());
-			}
-			}
-		}
-		//Usuwanie wczesniej dodanych tagow
-		Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
-		Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
-		}
 		//Zwrocenie zmodyfikowanej wiadomosci;
 		AddLineMessage.Body = Body.w_str();
 		memcpy((PPluginMessage)lParam,&AddLineMessage, sizeof(TPluginMessage));
 		return 2;
 	}
+	//Zacytowane wiadomosci poza botem Blablera
+	else
+	{
+		//Pobieranie informacji o wiadomosci
+		TPluginMessage AddLineMessage = *(PPluginMessage)lParam;
+		UnicodeString Body = (wchar_t*)AddLineMessage.Body;
+		Body = Body.Trim();
+		//Tekst zawiera zacytowane wiadomosci
+		if((Body.Pos("http://blabler.pl/s/"))||(Body.Pos("http://blabler.pl/dm/"))||(Body.Pos("http://blabler.pl/pm/"))
+		||(Body.Pos("https://blabler.pl/s/"))||(Body.Pos("https://blabler.pl/dm/"))||(Body.Pos("https://blabler.pl/pm/")))
+		{
+			//Dodawanie specjalnych tagow do wszystkich linkow
+			Body = StringReplace(Body, "<A HREF", "[CC_LINK_START]<A HREF", TReplaceFlags() << rfReplaceAll);
+			Body = StringReplace(Body, "</A>", "</A>[CC_LINK_END]", TReplaceFlags() << rfReplaceAll);
+			while(Body.Pos("[CC_LINK_END]"))
+			{
+				//Wyciagniecie kodu HTML odnosnika
+				UnicodeString URL = Body;
+				URL.Delete(1,URL.Pos("[CC_LINK_START]")+14);
+				URL.Delete(URL.Pos("[CC_LINK_END]"),URL.Length());
+				//Zacytowane wiadomosci
+				if((URL.Pos("http://blabler.pl/s/"))||(URL.Pos("http://blabler.pl/dm/"))||(URL.Pos("http://blabler.pl/pm/"))
+				||(URL.Pos("https://blabler.pl/s/"))||(URL.Pos("https://blabler.pl/dm/"))||(URL.Pos("https://blabler.pl/pm/")))
+				{
+					//Odnosnik z parametrem title
+					if(URL.Pos("title="))
+					{
+						//Wyciaganie zawartosci title
+						UnicodeString Title = URL;
+						Title.Delete(1,Title.Pos("title=\"")+6);
+						Title.Delete(Title.Pos("\""),Title.Length());
+						//Wyciaganie ID wiadomosci
+						UnicodeString ID = Title;
+						while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+						//Szukanie wiadomosci w cache
+						TIniFile *Ini = new TIniFile(CacheDir);
+						UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+						UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
+						delete Ini;
+						//Wiadomosc nie zapisana w cache
+						if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+						{
+							//Pobieranie danych przez API
+							if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+							{
+								//Ponowne szukanie wiadomosci w cache
+								TIniFile *Ini = new TIniFile(CacheDir);
+								QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+								From = Ini->ReadString(ConvertToInt(ID),"From","");
+								delete Ini;
+							}
+						}
+						//Wiadomosc zapisana w cache
+						if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+						{
+							//Formatowanie tresci zacytowanej wiadomosci
+							QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+							//Podmiana danych w odnosniku
+							UnicodeString tmpURL = URL;
+							tmpURL = StringReplace(tmpURL, "title=\""+Title+"\"", "title=\""+From+": "+QuoteBody+"\"", TReplaceFlags());
+							Body = StringReplace(Body, URL, tmpURL, TReplaceFlags());
+						}
+					}
+					//Odnosnik bez parametru title
+					else
+					{
+						//Wyciaganie ID wiadomosci
+						UnicodeString ID = URL;
+						ID.Delete(1,ID.Pos(">"));
+						ID.Delete(ID.Pos("<"),ID.Length());
+						URL = ID;
+						while(ID.Pos("/")) ID.Delete(1,ID.Pos("/"));
+						//Szukanie wiadomosci w cache
+						TIniFile *Ini = new TIniFile(CacheDir);
+						UnicodeString QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+						UnicodeString From = Ini->ReadString(ConvertToInt(ID),"From","");
+						delete Ini;
+						//Wiadomosc nie zapisana w cache
+						if((QuoteBody.IsEmpty())||(From.IsEmpty()))
+						{
+							//Pobieranie danych przez API
+							if(GetDataFromAPI("http://api.blabler.pl/updates/"+ID,ConvertToInt(ID)))
+							{
+								//Ponowne szukanie wiadomosci w cache
+								TIniFile *Ini = new TIniFile(CacheDir);
+								QuoteBody = DecodeBase64(Ini->ReadString(ConvertToInt(ID),"Body64",""));
+								From = Ini->ReadString(ConvertToInt(ID),"From","");
+								delete Ini;
+							}
+						}
+						//Wiadomosc zapisana w cache
+						if((!QuoteBody.IsEmpty())&&(!From.IsEmpty()))
+						{
+							//Formatowanie tresci zacytowanej wiadomosci
+							QuoteBody = StringReplace(QuoteBody, '"', "&quot;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, ">", "&gt;", TReplaceFlags() << rfReplaceAll);
+							QuoteBody = StringReplace(QuoteBody, "<", "&lt;", TReplaceFlags() << rfReplaceAll);
+							//Podmiana danych w odnosniku
+							Body = StringReplace(Body, URL+"\">"+URL, URL+"\" title=\""+From+": "+QuoteBody+"\">"+URL, TReplaceFlags());
+						}
+					}
+				}
+				//Usuwanie wczesniej dodanych tagow
+				Body = StringReplace(Body, "[CC_LINK_START]", "", TReplaceFlags());
+				Body = StringReplace(Body, "[CC_LINK_END]", "", TReplaceFlags());
+			}
+			//Zwrocenie zmodyfikowanej wiadomosci;
+			AddLineMessage.Body = Body.w_str();
+			memcpy((PPluginMessage)lParam,&AddLineMessage, sizeof(TPluginMessage));
+			return 2;
+		}
 	}
 
 	return 0;
@@ -2014,15 +2052,15 @@ INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam)
 INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
 {
 	//Okno ustawien zostalo juz stworzone
-	if(hBlablerForm)
+	if(hSettingsForm)
 	{
 		//Wlaczona zaawansowana stylizacja okien
 		if(ChkSkinEnabled())
 		{
 			TPluginColorChange ColorChange = *(PPluginColorChange)wParam;
-			hBlablerForm->sSkinManager->HueOffset = ColorChange.Hue;
-			hBlablerForm->sSkinManager->Saturation = ColorChange.Saturation;
-			hBlablerForm->sSkinManager->Brightness = ColorChange.Brightness;
+			hSettingsForm->sSkinManager->HueOffset = ColorChange.Hue;
+			hSettingsForm->sSkinManager->Saturation = ColorChange.Saturation;
+			hSettingsForm->sSkinManager->Brightness = ColorChange.Brightness;
 		}
 	}
 
@@ -2153,7 +2191,7 @@ INT_PTR __stdcall OnPrimaryTab (WPARAM wParam, LPARAM lParam)
 INT_PTR __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
 {
 	//Okno ustawien zostalo juz stworzone
-	if(hBlablerForm)
+	if(hSettingsForm)
 	{
 		//Wlaczona zaawansowana stylizacja okien
 		if(ChkSkinEnabled())
@@ -2165,34 +2203,34 @@ INT_PTR __stdcall OnThemeChanged(WPARAM wParam, LPARAM lParam)
 			{
 				//Dane pliku zaawansowanej stylizacji okien
 				ThemeSkinDir = StringReplace(ThemeSkinDir, "\\\\", "\\", TReplaceFlags() << rfReplaceAll);
-				hBlablerForm->sSkinManager->SkinDirectory = ThemeSkinDir;
-				hBlablerForm->sSkinManager->SkinName = "Skin.asz";
+				hSettingsForm->sSkinManager->SkinDirectory = ThemeSkinDir;
+				hSettingsForm->sSkinManager->SkinName = "Skin.asz";
 				//Ustawianie animacji AlphaControls
-				if(ChkThemeAnimateWindows()) hBlablerForm->sSkinManager->AnimEffects->FormShow->Time = 200;
-				else hBlablerForm->sSkinManager->AnimEffects->FormShow->Time = 0;
-				hBlablerForm->sSkinManager->Effects->AllowGlowing = ChkThemeGlowing();
+				if(ChkThemeAnimateWindows()) hSettingsForm->sSkinManager->AnimEffects->FormShow->Time = 200;
+				else hSettingsForm->sSkinManager->AnimEffects->FormShow->Time = 0;
+				hSettingsForm->sSkinManager->Effects->AllowGlowing = ChkThemeGlowing();
 				//Zmiana kolorystyki AlphaControls
-				hBlablerForm->sSkinManager->HueOffset = GetHUE();
-				hBlablerForm->sSkinManager->Saturation = GetSaturation();
-				hBlablerForm->sSkinManager->Brightness = GetBrightness();
+				hSettingsForm->sSkinManager->HueOffset = GetHUE();
+				hSettingsForm->sSkinManager->Saturation = GetSaturation();
+				hSettingsForm->sSkinManager->Brightness = GetBrightness();
 				//Aktywacja skorkowania AlphaControls
-				hBlablerForm->sSkinManager->Active = true;
+				hSettingsForm->sSkinManager->Active = true;
 			}
 			//Brak pliku zaawansowanej stylizacji okien
-			else hBlablerForm->sSkinManager->Active = false;
+			else hSettingsForm->sSkinManager->Active = false;
 		}
 		//Zaawansowana stylizacja okien wylaczona
-		else hBlablerForm->sSkinManager->Active = false;
+		else hSettingsForm->sSkinManager->Active = false;
 		//Kolor labelow
-		if(hBlablerForm->sSkinManager->Active)
+		if(hSettingsForm->sSkinManager->Active)
 		{
-			hBlablerForm->UsedAvatarsStyleLabel->Kind->Color = GetWarningColor();
-			hBlablerForm->LastAvatarsUpdateLabel->Kind->Color = hBlablerForm->UsedAvatarsStyleLabel->Kind->Color;
+			hSettingsForm->UsedAvatarsStyleLabel->Font->Color = GetWarningColor();
+			hSettingsForm->LastAvatarsUpdateLabel->Font->Color = hSettingsForm->UsedAvatarsStyleLabel->Font->Color;
 		}
 		else
 		{
-			hBlablerForm->UsedAvatarsStyleLabel->Kind->Color = clGreen;
-			hBlablerForm->LastAvatarsUpdateLabel->Kind->Color = clGreen;
+			hSettingsForm->UsedAvatarsStyleLabel->Font->Color = clGreen;
+			hSettingsForm->LastAvatarsUpdateLabel->Font->Color = clGreen;
 		}
 	}
 	//Pobranie stylu Attachment & Avatars
@@ -2284,7 +2322,7 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 //---------------------------------------------------------------------------
 
 //Zapisywanie zasobów
-/*void ExtractRes(wchar_t* FileName, wchar_t* ResName, wchar_t* ResType)
+void ExtractRes(wchar_t* FileName, wchar_t* ResName, wchar_t* ResType)
 {
 	TPluginTwoFlagParams PluginTwoFlagParams;
 	PluginTwoFlagParams.cbSize = sizeof(TPluginTwoFlagParams);
@@ -2293,7 +2331,7 @@ INT_PTR __stdcall OnXMLDebug(WPARAM wParam, LPARAM lParam)
 	PluginTwoFlagParams.Flag1 = (int)HInstance;
 	PluginLink.CallService(AQQ_FUNCTION_SAVERESOURCE,(WPARAM)&PluginTwoFlagParams,(LPARAM)FileName);
 }
-//---------------------------------------------------------------------------*/
+//---------------------------------------------------------------------------
 
 //Obliczanie sumy kontrolnej pliku
 UnicodeString MD5File(UnicodeString FileName)
@@ -2367,14 +2405,46 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
 {
 	//Linkowanie wtyczki z komunikatorem
 	PluginLink = *Link;
-	//Przypisanie uchwytu do formy ustawien
-	if(!hBlablerForm)
-	{
-		Application->Handle = (HWND)BlablerForm;
-		hBlablerForm = new TBlablerForm(Application);
-	}
 	//Sciezka folderu prywatnego wtyczek
 	UnicodeString PluginUserDir = GetPluginUserDir();
+	//Tworzenie katalogow lokalizacji
+	if(!DirectoryExists(PluginUserDir+"\\\\Languages"))
+		CreateDir(PluginUserDir+"\\\\Languages");
+	if(!DirectoryExists(PluginUserDir+"\\\\Languages\\\\Blabler"))
+		CreateDir(PluginUserDir+"\\\\Languages\\\\Blabler");
+	if(!DirectoryExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN"))
+		CreateDir(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN");
+	if(!DirectoryExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL"))
+		CreateDir(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL");
+	//Wypakowanie plikow lokalizacji
+	//C8F1D0F4BFD75C1D38751836B649A6C6
+	if(!FileExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\Const.lng"))
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\Const.lng").w_str(),L"EN_CONST",L"DATA");
+	else if(MD5File(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\Const.lng")!="C8F1D0F4BFD75C1D38751836B649A6C6")
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\Const.lng").w_str(),L"EN_CONST",L"DATA");
+	//B8BD774791826418DE8FF1F512F32875
+	if(!FileExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\TSettingsForm.lng"))
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\TSettingsForm.lng").w_str(),L"EN_SETTINGSFRM",L"DATA");
+	else if(MD5File(PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\TSettingsForm.lng")!="B8BD774791826418DE8FF1F512F32875")
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\EN\\\\TSettingsForm.lng").w_str(),L"EN_SETTINGSFRM",L"DATA");
+	//05B6674FE6241E679362FF4DB9278E16
+	if(!FileExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\Const.lng"))
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\Const.lng").w_str(),L"PL_CONST",L"DATA");
+	else if(MD5File(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\Const.lng")!="05B6674FE6241E679362FF4DB9278E16")
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\Const.lng").w_str(),L"PL_CONST",L"DATA");
+	//257B0F961AB2E1117167CF83E510D471
+	if(!FileExists(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\TSettingsForm.lng"))
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\TSettingsForm.lng").w_str(),L"PL_SETTINGSFRM",L"DATA");
+	else if(MD5File(PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\TSettingsForm.lng")!="257B0F961AB2E1117167CF83E510D471")
+		ExtractRes((PluginUserDir+"\\\\Languages\\\\Blabler\\\\PL\\\\TSettingsForm.lng").w_str(),L"PL_SETTINGSFRM",L"DATA");
+	//Ustawienie sciezki lokalizacji wtyczki
+	UnicodeString LangCode = (wchar_t*)PluginLink.CallService(AQQ_FUNCTION_GETLANGCODE,0,0);
+	LangPath = PluginUserDir + "\\\\Languages\\\\Blabler\\\\" + LangCode + "\\\\";
+	if(!DirectoryExists(LangPath))
+	{
+		LangCode = (wchar_t*)PluginLink.CallService(AQQ_FUNCTION_GETDEFLANGCODE,0,0);
+		LangPath = PluginUserDir + "\\\\Languages\\\\Blabler\\\\" + LangCode + "\\\\";
+	}
 	//Wypakiwanie ikonki Blabler.dll.png
 	//984BE6E674B8DD8C48B4C20EC0913586
 	/*if(!DirectoryExists(PluginUserDir+"\\\\Shared"))
@@ -2466,7 +2536,7 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
 extern "C" INT_PTR __declspec(dllexport) __stdcall Unload()
 {
 	//Anty "Abnormal program termination"
-	hBlablerForm->aForceDisconnect->Execute();
+	if(hSettingsForm) hSettingsForm->aForceDisconnect->Execute();
 	//Zatrzymanie timerow
 	for(int TimerID=10;TimerID<=20;TimerID=TimerID+10) KillTimer(hTimerFrm,TimerID);
 	//Usuwanie okna timera
