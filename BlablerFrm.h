@@ -63,7 +63,7 @@
 #include <IdSSL.hpp>
 #include <IdSSLOpenSSL.hpp>
 //---------------------------------------------------------------------------
-class TBlablerForm : public TForm
+class TSettingsForm : public TForm
 {
 __published:	// IDE-managed Components
 	TsButton *SaveButton;
@@ -74,13 +74,10 @@ __published:	// IDE-managed Components
 	TsButton *CancelButton;
 	TsButton *OKButton;
 	TAction *aSettingsChanged;
-	TsButton *ManualAvatarsUpdateButton;
 	TFileListBox *FileListBox;
-	TsProgressBar *ProgressBar;
 	TIdThreadComponent *ManualAvatarsUpdateThread;
 	TIdThreadComponent *AutoAvatarsUpdateThread;
 	TIdHTTP *AUIdHTTP;
-	TTimer *AnimateTimer;
 	TsButton *AvatarStyleSaveButton;
 	TsButton *AvatarStyleDefaultButton;
 	TsSkinManager *sSkinManager;
@@ -90,20 +87,10 @@ __published:	// IDE-managed Components
 	TsSkinProvider *sSkinProvider;
 	TsGroupBox *AvatarsSizeGroupBox;
 	TsGroupBox *AvatarsUpdateGroupBox;
-	TsLabelFX *LastAvatarsUpdateLabel;
-	TsLabel *LastAvatarsUpdateInfoLabel;
-	TsComboBox *AutoAvatarsUpdateComboBox;
 	TsGroupBox *AvatarsStyleGroupBox;
 	TsLabel *AvatarsStyleLabel;
-	TsLabelFX *UsedAvatarsStyleLabel;
 	TsLabel *EditAvatarsStyleLabel;
 	TsMemo *AvatarsStyleMemo;
-	TsLabel *ProgressLabel;
-	TsLabel *PixelInfoLabel;
-	TsLabel *AvatarInfoLabel;
-	TsLabel *XSizeLabel;
-	TsEdit *AvatarHeightEdit;
-	TsSpinEdit *AvatarWidthCSpinEdit;
 	TAction *aForceDisconnect;
 	TsTabSheet *HighlightMsgTabSheet;
 	TsCheckBox *HighlightMsgCheckBox;
@@ -115,14 +102,27 @@ __published:	// IDE-managed Components
 	TsEdit *ColorHighlightMsgEdit;
 	TsEdit *ItemHighlightMsgEdit;
 	TsComboBox *HighlightMsgModeComboBox;
-	TsLabel *HighlightMsgModeLabel;
 	TIdHTTP *AIdHTTP;
-	TMemo *FileMemo;
 	TIdThreadComponent *GetAvatarsThread;
 	TIdHTTP *IdHTTP;
 	TIdAntiFreeze *IdAntiFreeze;
 	TTaskbar *Taskbar;
 	TIdSSLIOHandlerSocketOpenSSL *IdSSLIOHandlerSocketOpenSSL;
+	TsLabel *HighlightMsgModeLabel;
+	TsLabel *HighlightMsgModeInfoLabel;
+	TsSpinEdit *AvatarWidthCSpinEdit;
+	TsLabel *XSizeLabel;
+	TsEdit *AvatarHeightEdit;
+	TsLabel *PixelInfoLabel;
+	TsLabel *AvatarInfoLabel;
+	TsLabel *UsedAvatarsStyleLabel;
+	TsComboBox *AutoAvatarsUpdateComboBox;
+	TsLabel *AvatarsUpdateLabel;
+	TsLabel *LastAvatarsUpdateInfoLabel;
+	TsLabel *LastAvatarsUpdateLabel;
+	TsProgressBar *ProgressBar;
+	TsButton *ManualAvatarsUpdateButton;
+	TsLabel *ProgressLabel;
 	void __fastcall SaveButtonClick(TObject *Sender);
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall aLoadSettingsExecute(TObject *Sender);
@@ -135,7 +135,6 @@ __published:	// IDE-managed Components
 	void __fastcall ManualAvatarsUpdateThreadRun(TIdThreadComponent *Sender);
 	void __fastcall AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sender);
 	void __fastcall EditAvatarsStyleLabelClick(TObject *Sender);
-	void __fastcall AnimateTimerTimer(TObject *Sender);
 	void __fastcall AvatarStyleDefaultButtonClick(TObject *Sender);
 	void __fastcall AvatarsStyleMemoChange(TObject *Sender);
 	void __fastcall AvatarStyleSaveButtonClick(TObject *Sender);
@@ -155,7 +154,7 @@ __published:	// IDE-managed Components
 	void __fastcall sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning);
 private:	// User declarations
 public:		// User declarations
-	__fastcall TBlablerForm(TComponent* Owner);
+	__fastcall TSettingsForm(TComponent* Owner);
 	void __fastcall WMTransparency(TMessage &Message);
 	bool __fastcall AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);
 	bool __fastcall AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL);
@@ -164,6 +163,6 @@ public:		// User declarations
 	END_MESSAGE_MAP(TForm)
 };
 //---------------------------------------------------------------------------
-extern PACKAGE TBlablerForm *BlablerForm;
+extern PACKAGE TSettingsForm *SettingsForm;
 //---------------------------------------------------------------------------
 #endif

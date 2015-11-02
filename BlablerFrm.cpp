@@ -21,13 +21,14 @@
 #include <vcl.h>
 #include <inifiles.hpp>
 #include <utilcls.h>
+#include <LangAPI.hpp>
+#pragma hdrstop
+#include "BlablerFrm.h"
+//---------------------------------------------------------------------------
 #pragma package(smart_init)
 #ifdef _WIN64
 #pragma link "Vcl.IdAntiFreeze"
 #endif
-#pragma hdrstop
-#include "BlablerFrm.h"
-//---------------------------------------------------------------------------
 #pragma link "acProgressBar"
 #pragma link "sBevel"
 #pragma link "sButton"
@@ -45,13 +46,16 @@
 #pragma link "sSpeedButton"
 #pragma link "sSpinEdit"
 #pragma resource "*.dfm"
-TBlablerForm *BlablerForm;
+TSettingsForm *SettingsForm;
 //---------------------------------------------------------------------------
 __declspec(dllimport)UnicodeString GetPluginUserDir();
 __declspec(dllimport)UnicodeString GetPluginUserDirW();
 __declspec(dllimport)UnicodeString GetThemeSkinDir();
 __declspec(dllimport)UnicodeString GetAvatarsDir();
 __declspec(dllimport)UnicodeString GetAvatarStyle();
+__declspec(dllimport)void SetAvatarStyle(UnicodeString Style);
+__declspec(dllimport)int GetAvatarType();
+__declspec(dllimport)void SetAvatarType(int Type);
 __declspec(dllimport)TColor GetWarningColor();
 __declspec(dllimport)bool ChkSkinEnabled();
 __declspec(dllimport)bool ChkThemeAnimateWindows();
@@ -60,22 +64,20 @@ __declspec(dllimport)int GetHUE();
 __declspec(dllimport)int GetSaturation();
 __declspec(dllimport)int GetBrightness();
 __declspec(dllimport)UnicodeString MD5File(UnicodeString FileName);
-__declspec(dllimport)void SetAvatarStyle(UnicodeString Style);
 __declspec(dllimport)bool ChkAvatarsListItem();
 __declspec(dllimport)UnicodeString GetAvatarsListItem();
 __declspec(dllimport)void LoadSettings();
 __declspec(dllimport)UnicodeString EncodeBase64(UnicodeString Str);
 //---------------------------------------------------------------------------
-bool AnimateMode;
 bool ForceDisconnect = false;
 //---------------------------------------------------------------------------
-__fastcall TBlablerForm::TBlablerForm(TComponent* Owner)
+__fastcall TSettingsForm::TSettingsForm(TComponent* Owner)
 		: TForm(Owner)
 {
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::WMTransparency(TMessage &Message)
+void __fastcall TSettingsForm::WMTransparency(TMessage &Message)
 {
 	Application->ProcessMessages();
 	if(sSkinManager->Active) sSkinProvider->BorderForm->UpdateExBordersPos(true,(int)Message.LParam);
@@ -83,7 +85,7 @@ void __fastcall TBlablerForm::WMTransparency(TMessage &Message)
 //---------------------------------------------------------------------------
 
 //Pobieranie pliku z danego URL
-bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
+bool __fastcall TSettingsForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
 {
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
@@ -130,7 +132,7 @@ bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeSt
 //---------------------------------------------------------------------------
 
 //Pobieranie pliku z danego URL (dla auto/manual update awatarow)
-bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
+bool __fastcall TSettingsForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
 {
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
@@ -176,8 +178,15 @@ bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeS
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::FormCreate(TObject *Sender)
+void __fastcall TSettingsForm::FormCreate(TObject *Sender)
 {
+	//Lokalizowanie formy
+	LangForm(this);
+	//Poprawka pozycji komponentow
+	UsedAvatarsStyleLabel->Left = AvatarsStyleLabel->Left + Canvas->TextWidth(AvatarsStyleLabel->Caption) + 6;
+	EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + Canvas->TextWidth(UsedAvatarsStyleLabel->Caption) + 6;
+	AutoAvatarsUpdateComboBox->Left = AvatarsUpdateLabel->Left + Canvas->TextWidth(AvatarsUpdateLabel->Caption) + 6;
+	LastAvatarsUpdateLabel->Left = LastAvatarsUpdateInfoLabel->Left + Canvas->TextWidth(LastAvatarsUpdateInfoLabel->Caption) + 6;
 	//Wlaczona zaawansowana stylizacja okien
 	if(ChkSkinEnabled())
 	{
@@ -208,44 +217,56 @@ void __fastcall TBlablerForm::FormCreate(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::FormShow(TObject *Sender)
+void __fastcall TSettingsForm::FormShow(TObject *Sender)
 {
 	//Wlaczona zaawansowana stylizacja okien
 	if(sSkinManager->Active)
 	{
 		//Kolor labelow
-		UsedAvatarsStyleLabel->Kind->Color = GetWarningColor();
-		LastAvatarsUpdateLabel->Kind->Color = UsedAvatarsStyleLabel->Kind->Color;
+		UsedAvatarsStyleLabel->Font->Color = GetWarningColor();
+		LastAvatarsUpdateLabel->Font->Color = UsedAvatarsStyleLabel->Font->Color;
 	}
 	//Zaawansowana stylizacja okien wylaczona
 	else
 	{
 		//Kolor labelow
-		UsedAvatarsStyleLabel->Kind->Color = clGreen;
-		LastAvatarsUpdateLabel->Kind->Color = clGreen;
+		UsedAvatarsStyleLabel->Font->Color = clGreen;
+		LastAvatarsUpdateLabel->Font->Color = clGreen;
 	}
 	//Odczyt ustawien wtyczki
 	aLoadSettings->Execute();
+	//Odczyt typu stylu awatarow
+	int AvatarType = GetAvatarType();
+	if(AvatarType)
+	{
+		if(AvatarType==1) UsedAvatarsStyleLabel->Caption = GetLangStr("Own");
+		else UsedAvatarsStyleLabel->Caption = GetLangStr("Default");
+		EditAvatarsStyleLabel->Visible = true;
+	}
+	else
+	{
+		UsedAvatarsStyleLabel->Caption = GetLangStr("FromTheme");
+		EditAvatarsStyleLabel->Visible = false;
+	}
+	EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + Canvas->TextWidth(UsedAvatarsStyleLabel->Caption) + 6;
 	//Wlaczanie przyciskow
 	SaveButton->Enabled = false;
 	//Ustawienie domyslnie wlaczonej karty ustawien
 	sPageControl->ActivePage = AvatarsTabSheet;
 	//Ustawienie kontrolek
 	AvatarsStyleGroupBox->Height = 42;
-	EditAvatarsStyleLabel->Caption = "(edytuj)";
+	EditAvatarsStyleLabel->Caption = GetLangStr("Edit");
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::aLoadSettingsExecute(TObject *Sender)
+void __fastcall TSettingsForm::aLoadSettingsExecute(TObject *Sender)
 {
 	TIniFile *Ini = new TIniFile( GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
 	//Awatary
 	AvatarWidthCSpinEdit->Value = Ini->ReadInteger("Avatars","Size",25);
 	UnicodeString tLastUpdate = Ini->ReadString("Avatars","LastUpdate","");
-	if(!tLastUpdate.IsEmpty())
-		LastAvatarsUpdateLabel->Caption = tLastUpdate;
-	else
-		LastAvatarsUpdateLabel->Caption = "brak danych";
+	if(!tLastUpdate.IsEmpty()) LastAvatarsUpdateLabel->Caption = tLastUpdate;
+	else LastAvatarsUpdateLabel->Caption = GetLangStr("NoData");
 	int tLastUpdateCount = Ini->ReadInteger("Avatars","LastUpdateCount",0);
 	if(tLastUpdateCount) LastAvatarsUpdateLabel->Caption = LastAvatarsUpdateLabel->Caption + " (" + IntToStr(tLastUpdateCount) + ")";
 	AutoAvatarsUpdateComboBox->ItemIndex = Ini->ReadInteger("Avatars","UpdateMode",0);
@@ -282,15 +303,13 @@ void __fastcall TBlablerForm::aLoadSettingsExecute(TObject *Sender)
 	ColorHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
 	ItemHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
 	HighlightMsgModeComboBox->Enabled = HighlightMsgCheckBox->Checked;
-	if(HighlightMsgModeComboBox->ItemIndex==2)
-		HighlightMsgModeLabel->Visible = true;
-	else
-		HighlightMsgModeLabel->Visible = false;
+	if(HighlightMsgModeComboBox->ItemIndex==2) HighlightMsgModeInfoLabel->Visible = true;
+	else HighlightMsgModeInfoLabel->Visible = false;
 	delete Ini;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::aSaveSettingsExecute(TObject *Sender)
+void __fastcall TSettingsForm::aSaveSettingsExecute(TObject *Sender)
 {
 	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
 	//Awatary
@@ -309,7 +328,7 @@ void __fastcall TBlablerForm::aSaveSettingsExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::aSettingsChangedExecute(TObject *Sender)
+void __fastcall TSettingsForm::aSettingsChangedExecute(TObject *Sender)
 {
 	//Aktywowanie przycisku zapisywania ustawien
 	SaveButton->Enabled = true;
@@ -317,7 +336,7 @@ void __fastcall TBlablerForm::aSettingsChangedExecute(TObject *Sender)
 //---------------------------------------------------------------------------
 
 //Wymuszanie rozlaczenia sie protokolow HTTP
-void __fastcall TBlablerForm::aForceDisconnectExecute(TObject *Sender)
+void __fastcall TSettingsForm::aForceDisconnectExecute(TObject *Sender)
 {
 	//Wymuszenie zakonczenie petli watkow
 	ForceDisconnect = true;
@@ -329,13 +348,13 @@ void __fastcall TBlablerForm::aForceDisconnectExecute(TObject *Sender)
 //---------------------------------------------------------------------------
 
 //Zamkniecie formy ustawien
-void __fastcall TBlablerForm::aExitExecute(TObject *Sender)
+void __fastcall TSettingsForm::aExitExecute(TObject *Sender)
 {
 	Close();
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::SaveButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::SaveButtonClick(TObject *Sender)
 {
 	//Wylaczanie przyciskow
 	SaveButton->Enabled = false;
@@ -351,7 +370,7 @@ void __fastcall TBlablerForm::SaveButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::OKButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::OKButtonClick(TObject *Sender)
 {
 	//Wylaczanie przyciskow
 	SaveButton->Enabled = false;
@@ -369,104 +388,96 @@ void __fastcall TBlablerForm::OKButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AvatarWidthCSpinEditChange(TObject *Sender)
+void __fastcall TSettingsForm::AvatarWidthCSpinEditChange(TObject *Sender)
 {
 	AvatarHeightEdit->Text = AvatarWidthCSpinEdit->Value;
 	aSettingsChanged->Execute();
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AvatarsStyleMemoChange(TObject *Sender)
+void __fastcall TSettingsForm::AvatarsStyleMemoChange(TObject *Sender)
 {
 	//Zezwalanie/blokowanie zapisania stylu awatarow
 	if(AvatarsStyleMemo->Text.Pos("CC_AVATAR"))
 		AvatarStyleSaveButton->Enabled = true;
-	else
-		AvatarStyleSaveButton->Enabled = false;
+	else AvatarStyleSaveButton->Enabled = false;
 	//Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
 	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
 		AvatarStyleDefaultButton->Enabled = true;
-	else
-		AvatarStyleDefaultButton->Enabled = false;
+	else AvatarStyleDefaultButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AvatarStyleDefaultButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::AvatarStyleDefaultButtonClick(TObject *Sender)
 {
 	//Przywracanie domyslnego stylu awatarow
-	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-		AvatarsStyleMemo->Text = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
+	AvatarsStyleMemo->Text = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AvatarStyleSaveButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::AvatarStyleSaveButtonClick(TObject *Sender)
 {
 	//Zapisanie stylu awatarow do pliku
-	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-	Ini->WriteString("Avatars", "Style64", EncodeBase64(AvatarsStyleMemo->Text));
+	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\tweetIM\\\\Settings.ini");
+	if(AvatarsStyleMemo->Text == "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
+	{
+		Ini->DeleteKey("Avatars64", "Style");
+		SetAvatarType(2);
+		UsedAvatarsStyleLabel->Caption = GetLangStr("Default");
+	}
+	else
+	{
+		Ini->WriteString("Avatars64", "Style", EncodeBase64(AvatarsStyleMemo->Text));
+		SetAvatarType(1);
+		UsedAvatarsStyleLabel->Caption = GetLangStr("Own");
+	}
 	delete Ini;
 	//Ustawienie stylu w rdzeniu wtyczki
 	SetAvatarStyle(AvatarsStyleMemo->Text);
-	//Info o rodzaju stylu
-	if(AvatarsStyleMemo->Text == "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-	{
-		UsedAvatarsStyleLabel->Caption = "domyœlny";
-		EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
-	}
-	else
-	{
-		UsedAvatarsStyleLabel->Caption = "w³asny";
-		EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
-	}
 	//Zamkniecie edycji stylu awatarow
-	EditAvatarsStyleLabel->Caption = "(edytuj)";
-	AnimateMode = false;
-	AnimateTimer->Enabled = true;
+	AvatarsStyleGroupBox->Height = 42;
+	EditAvatarsStyleLabel->Caption = GetLangStr("Edit");
+	UsedAvatarsStyleLabel->Left = AvatarsStyleLabel->Left + Canvas->TextWidth(AvatarsStyleLabel->Caption) + 6;
+	EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + Canvas->TextWidth(UsedAvatarsStyleLabel->Caption) + 6;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::EditAvatarsStyleLabelClick(TObject *Sender)
+void __fastcall TSettingsForm::EditAvatarsStyleLabelClick(TObject *Sender)
 {
-	//Wylaczanie timera animacji
-	if(AnimateTimer->Enabled)
-		AnimateTimer->Enabled = false;
-	//Chowanie edycji stylu awatarow
+	//Pokazywanie edycji stylu awatarow
 	if(AvatarsStyleGroupBox->Height==42)
 	{
-		EditAvatarsStyleLabel->Caption = "(anuluj edycjê)";
+		EditAvatarsStyleLabel->Caption = GetLangStr("CancelEditing");
 		AvatarsStyleMemo->Text = GetAvatarStyle();
 		AvatarStyleSaveButton->Enabled = false;
-		AnimateMode = true;
-		AnimateTimer->Enabled = true;
+		AvatarsStyleGroupBox->Height = 162;
 	}
-	//Pokazywanie edycji stylu awatarow
+	//Chowanie edycji stylu awatarow
 	else
 	{
-		EditAvatarsStyleLabel->Caption = "(edytuj)";
-		AnimateMode = false;
-		AnimateTimer->Enabled = true;
+		EditAvatarsStyleLabel->Caption = GetLangStr("Edit");
+		AvatarsStyleGroupBox->Height = 42;
 	}
 	//Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
 	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
 		AvatarStyleDefaultButton->Enabled = true;
-	else
-		AvatarStyleDefaultButton->Enabled = false;
+	else AvatarStyleDefaultButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 {
-	if(ManualAvatarsUpdateButton->Caption=="SprawdŸ aktualizacje")
+	if(ManualAvatarsUpdateButton->Caption==GetLangStr("CheckForUpdates"))
 	{
 		//Zmiana caption na buttonie
-		ManualAvatarsUpdateButton->Caption = "Przerwij aktualizacje";
+		ManualAvatarsUpdateButton->Caption = GetLangStr("AbortUpdates");
 		//Sprawdzanie czy folder awatar istnieje
 		if(!DirectoryExists(GetPluginUserDirW() + "\\Blabler\\Avatars"))
 			CreateDir(GetPluginUserDirW() + "\\Blabler\\Avatars");
 		//Wlaczenie paska postepu
 		ProgressBar->Position = 0;
 		ProgressBar->Visible = true;
-		ProgressLabel->Caption = "Pobieranie danych...";
+		ProgressLabel->Caption = GetLangStr("RetrievingData");
 		ProgressLabel->Visible = true;
 		//Wlaczenie paska postepu na taskbarze
 		Taskbar->ProgressValue = 0;
@@ -509,7 +520,7 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::HighlightMsgCheckBoxClick(TObject *Sender)
+void __fastcall TSettingsForm::HighlightMsgCheckBoxClick(TObject *Sender)
 {
 	aSettingsChanged->Execute();
 	HighlightMsgListView->Enabled = HighlightMsgCheckBox->Checked;
@@ -523,14 +534,14 @@ void __fastcall TBlablerForm::HighlightMsgCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::HighlightMsgListViewEdited(TObject *Sender, TListItem *Item,
+void __fastcall TSettingsForm::HighlightMsgListViewEdited(TObject *Sender, TListItem *Item,
 			UnicodeString &S)
 {
 	aSettingsChanged->Execute();
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::HighlightMsgListViewKeyDown(TObject *Sender, WORD &Key,
+void __fastcall TSettingsForm::HighlightMsgListViewKeyDown(TObject *Sender, WORD &Key,
 			TShiftState Shift)
 {
 	//Wcisniecie przycisku Delete
@@ -546,7 +557,7 @@ void __fastcall TBlablerForm::HighlightMsgListViewKeyDown(TObject *Sender, WORD 
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::HighlightMsgListViewSelectItem(TObject *Sender, TListItem *Item,
+void __fastcall TSettingsForm::HighlightMsgListViewSelectItem(TObject *Sender, TListItem *Item,
 			bool Selected)
 {
 	//Wczytyawanie elementow szybkiej edycji
@@ -556,13 +567,12 @@ void __fastcall TBlablerForm::HighlightMsgListViewSelectItem(TObject *Sender, TL
 		ColorHighlightMsgEdit->Text = HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->SubItems->Strings[0];
 		RemoveHighlightMsgSpeedButton->Enabled = true;
 	}
-	else
-		RemoveHighlightMsgSpeedButton->Enabled = false;
+	else RemoveHighlightMsgSpeedButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 //Przywrocenie domylsnych zawartosci kontrolek
-void __fastcall TBlablerForm::EraseHighlightMsgSpeedButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::EraseHighlightMsgSpeedButtonClick(TObject *Sender)
 {
 	ItemHighlightMsgEdit->Text = "";
 	ColorHighlightMsgEdit->Text = "#FF0000";
@@ -571,7 +581,7 @@ void __fastcall TBlablerForm::EraseHighlightMsgSpeedButtonClick(TObject *Sender)
 //---------------------------------------------------------------------------
 
 //Pobieranie koloru w HEX z komponentu
-void __fastcall TBlablerForm::HighlightMsgColorSelectChange(TObject *Sender)
+void __fastcall TSettingsForm::HighlightMsgColorSelectChange(TObject *Sender)
 {
 	TColor Color = HighlightMsgColorSelect->ColorValue;
 	int R,G,B;
@@ -582,7 +592,7 @@ void __fastcall TBlablerForm::HighlightMsgColorSelectChange(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AddHighlightMsgsSpeedButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::AddHighlightMsgsSpeedButtonClick(TObject *Sender)
 {
 	//Edycja juz dodanych elementow
 	if(HighlightMsgListView->ItemIndex!=-1)
@@ -637,7 +647,7 @@ void __fastcall TBlablerForm::AddHighlightMsgsSpeedButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::RemoveHighlightMsgSpeedButtonClick(TObject *Sender)
+void __fastcall TSettingsForm::RemoveHighlightMsgSpeedButtonClick(TObject *Sender)
 {
 	//Usuwanie elementu
 	if(HighlightMsgListView->ItemIndex!=-1)
@@ -648,38 +658,15 @@ void __fastcall TBlablerForm::RemoveHighlightMsgSpeedButtonClick(TObject *Sender
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::HighlightMsgModeComboBoxChange(TObject *Sender)
+void __fastcall TSettingsForm::HighlightMsgModeComboBoxChange(TObject *Sender)
 {
 	aSettingsChanged->Execute();
-	if(HighlightMsgModeComboBox->ItemIndex==2)
-		HighlightMsgModeLabel->Visible = true;
-	else
-		HighlightMsgModeLabel->Visible = false;
+	if(HighlightMsgModeComboBox->ItemIndex==2) HighlightMsgModeInfoLabel->Visible = true;
+	else HighlightMsgModeInfoLabel->Visible = false;
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AnimateTimerTimer(TObject *Sender)
-{
-	//Pokazywanie ukrytego panelu
-	if(AnimateMode)
-	{
-		if(AvatarsStyleGroupBox->Height < 162)
-			AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height + 5;
-		else
-			AnimateTimer->Enabled = false;
-	}
-	//Chowanie panelu
-	else
-	{
-		if(AvatarsStyleGroupBox->Height > 42)
-			AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height - 5;
-		else
-			AnimateTimer->Enabled = false;
-	}
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
+void __fastcall TSettingsForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
 {
 	//Petla aktualizacji
 	int NewAvatars=0;
@@ -734,7 +721,7 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *S
 	//Wylaczenie paska postepu na taskbarze
 	Taskbar->ProgressState = TTaskBarProgressState::None;
 	//Default caption
-	ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
+	ManualAvatarsUpdateButton->Caption = GetLangStr("CheckForUpdates");
 	if(ForceDisconnect)
 	{
 		ManualAvatarsUpdateButton->Enabled = true;
@@ -745,7 +732,7 @@ void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *S
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
+void __fastcall TSettingsForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
 {
 	//Petla aktualizacji
 	int NewAvatars=0;
@@ -800,7 +787,7 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
 	//Wylaczenie paska postepuna taskbarze
 	Taskbar->ProgressState = TTaskBarProgressState::None;
 	//Default caption
-	ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
+	ManualAvatarsUpdateButton->Caption = GetLangStr("CheckForUpdates");
 	if(ForceDisconnect)
 	{
 		ManualAvatarsUpdateButton->Enabled = true;
@@ -811,7 +798,7 @@ void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sen
 }
 //---------------------------------------------------------------------------*/
 
-void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
+void __fastcall TSettingsForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 {
 	//Pobranie itemu z listy awatarow do pobrania
 	UnicodeString UserName = GetAvatarsListItem();
@@ -839,7 +826,7 @@ void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::ColorHighlightMsgEditChange(TObject *Sender)
+void __fastcall TSettingsForm::ColorHighlightMsgEditChange(TObject *Sender)
 {
 	if((ColorHighlightMsgEdit->Text.Pos("#")==1)&&(ColorHighlightMsgEdit->Text.Length()==7))
 	{
@@ -859,7 +846,7 @@ void __fastcall TBlablerForm::ColorHighlightMsgEditChange(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TBlablerForm::sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning)
+void __fastcall TSettingsForm::sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning)
 {
 	AllowSkinning = false;
 }

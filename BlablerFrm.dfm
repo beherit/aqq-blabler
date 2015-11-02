@@ -1,6 +1,8 @@
-object BlablerForm: TBlablerForm
+object SettingsForm: TSettingsForm
+  Tag = 1
   Left = 0
   Top = 3
+  ActiveControl = AvatarWidthCSpinEdit
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
   Caption = 'Blabler - ustawienia'
@@ -165,6 +167,7 @@ object BlablerForm: TBlablerForm
     ExplicitWidth = 50
   end
   object SaveButton: TsButton
+    Tag = 2
     Left = 252
     Top = 300
     Width = 75
@@ -178,6 +181,7 @@ object BlablerForm: TBlablerForm
     SkinData.SkinSection = 'BUTTON'
   end
   object CancelButton: TsButton
+    Tag = 3
     Left = 171
     Top = 300
     Width = 75
@@ -190,6 +194,7 @@ object BlablerForm: TBlablerForm
     SkinData.SkinSection = 'BUTTON'
   end
   object OKButton: TsButton
+    Tag = 4
     Left = 90
     Top = 300
     Width = 75
@@ -217,63 +222,46 @@ object BlablerForm: TBlablerForm
     TabOrder = 3
     SkinData.SkinSection = 'PAGECONTROL'
     object AvatarsTabSheet: TsTabSheet
+      Tag = 5
       Caption = 'Awatary'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
       object AvatarsSizeGroupBox: TsGroupBox
+        Tag = 7
         Left = 7
         Top = 3
         Width = 299
         Height = 71
-        Caption = 'Rozmiar awatar'#243'w'
+        Caption = 'Rozmiar'
         TabOrder = 0
         SkinData.SkinSection = 'GROUPBOX'
         Checked = False
-        object PixelInfoLabel: TsLabel
-          Left = 119
-          Top = 23
-          Width = 153
-          Height = 13
-          Caption = '(warto'#347#263' wyra'#380'ona w pikselach)'
-          Enabled = False
-        end
-        object AvatarInfoLabel: TsLabel
-          Left = 14
-          Top = 48
-          Width = 273
-          Height = 13
-          SkinSection = 'LABEL'
-          Caption = 'Rozmiar awatar'#243'w mo'#380'e by'#263' ustalony przez kompozycj'#281'!'
-          Enabled = False
-        end
         object XSizeLabel: TsLabel
-          Left = 75
+          Left = 61
           Top = 23
           Width = 6
           Height = 13
           Caption = 'x'
         end
-        object AvatarHeightEdit: TsEdit
-          Left = 87
-          Top = 20
-          Width = 26
-          Height = 21
-          TabStop = False
-          Alignment = taCenter
-          Font.Charset = EASTEUROPE_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          MaxLength = 3
-          ParentFont = False
-          ReadOnly = True
-          TabOrder = 1
-          Text = '25'
-          SkinData.SkinSection = 'EDIT'
+        object PixelInfoLabel: TsLabel
+          Left = 105
+          Top = 23
+          Width = 12
+          Height = 13
+          Caption = 'px'
+        end
+        object AvatarInfoLabel: TsLabel
+          Tag = 8
+          Left = 14
+          Top = 48
+          Width = 218
+          Height = 13
+          SkinSection = 'LABEL'
+          Caption = 'Rozmiar mo'#380'e by'#263' ustalony przez kompozycj'#281
+          Enabled = False
         end
         object AvatarWidthCSpinEdit: TsSpinEdit
-          Left = 28
+          Left = 14
           Top = 20
           Width = 41
           Height = 21
@@ -292,51 +280,69 @@ object BlablerForm: TBlablerForm
           MinValue = 15
           Value = 25
         end
+        object AvatarHeightEdit: TsEdit
+          Left = 73
+          Top = 20
+          Width = 26
+          Height = 21
+          TabStop = False
+          Alignment = taCenter
+          Font.Charset = EASTEUROPE_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          MaxLength = 3
+          ParentFont = False
+          ReadOnly = True
+          TabOrder = 1
+          Text = '25'
+          SkinData.SkinSection = 'EDIT'
+        end
       end
       object AvatarsUpdateGroupBox: TsGroupBox
+        Tag = 15
         Left = 8
         Top = 128
         Width = 299
         Height = 114
-        Caption = 'Aktualizacja awatar'#243'w'
+        Caption = 'Aktualizacja'
         TabOrder = 1
         SkinData.SkinSection = 'GROUPBOX'
         Checked = False
-        object LastAvatarsUpdateLabel: TsLabelFX
-          Left = 144
-          Top = 47
-          Width = 60
-          Height = 14
-          Caption = 'brak danych'
-          Color = clBtnFace
-          ParentColor = False
-          ParentFont = False
-          Font.Charset = EASTEUROPE_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          Angle = 0
-          Kind.KindType = ktCustom
-          Kind.Color = clGreen
-          Shadow.BlurCount = 0
-          Shadow.OffsetKeeper.LeftTop = 0
-          Shadow.OffsetKeeper.RightBottom = 1
+        object AvatarsUpdateLabel: TsLabel
+          Tag = 16
+          Left = 14
+          Top = 23
+          Width = 132
+          Height = 13
+          Caption = 'Automatyczna aktualizacja:'
         end
         object LastAvatarsUpdateInfoLabel: TsLabel
-          Left = 38
+          Tag = 18
+          Left = 14
           Top = 47
           Width = 100
           Height = 13
           Caption = 'Ostania aktualizacja:'
+        end
+        object LastAvatarsUpdateLabel: TsLabel
+          Tag = 19
+          Left = 120
+          Top = 47
+          Width = 59
+          Height = 13
+          Caption = 'brak danych'
           ParentFont = False
           Font.Charset = EASTEUROPE_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clGreen
           Font.Height = -11
           Font.Name = 'Tahoma'
           Font.Style = []
+          UseSkinColor = False
         end
         object ProgressLabel: TsLabel
+          Tag = 21
           Left = 18
           Top = 90
           Width = 100
@@ -345,42 +351,21 @@ object BlablerForm: TBlablerForm
           Visible = False
         end
         object FileListBox: TFileListBox
-          Left = 175
-          Top = 74
+          Left = 174
+          Top = 75
           Width = 115
           Height = 25
           ItemHeight = 13
-          TabOrder = 2
+          TabOrder = 0
           Visible = False
-        end
-        object ManualAvatarsUpdateButton: TsButton
-          Left = 175
-          Top = 74
-          Width = 115
-          Height = 25
-          Caption = 'Sprawd'#378' aktualizacje'
-          TabOrder = 1
-          OnClick = ManualAvatarsUpdateButtonClick
-          SkinData.SkinSection = 'BUTTON'
-        end
-        object ProgressBar: TsProgressBar
-          Left = 14
-          Top = 76
-          Width = 147
-          Height = 15
-          TabOrder = 3
-          Visible = False
-          SkinData.SkinSection = 'GAUGE'
         end
         object AutoAvatarsUpdateComboBox: TsComboBox
-          Left = 205
+          Tag = 17
+          Left = 152
           Top = 20
           Width = 80
           Height = 21
           Alignment = taLeftJustify
-          BoundLabel.Active = True
-          BoundLabel.Caption = 'Automatyczna aktualizacje awatar'#243'w:'
-          BoundLabel.Indent = 2
           SkinData.SkinSection = 'COMBOBOX'
           VerticalAlignment = taAlignTop
           Style = csDropDownList
@@ -391,7 +376,7 @@ object BlablerForm: TBlablerForm
           Font.Style = []
           ItemIndex = 0
           ParentFont = False
-          TabOrder = 0
+          TabOrder = 1
           Text = 'Nigdy'
           OnChange = aSettingsChangedExecute
           Items.Strings = (
@@ -400,17 +385,39 @@ object BlablerForm: TBlablerForm
             'Co tydzie'#324
             'Co miesi'#261'c')
         end
+        object ProgressBar: TsProgressBar
+          Left = 14
+          Top = 76
+          Width = 147
+          Height = 15
+          TabOrder = 2
+          Visible = False
+          SkinData.SkinSection = 'GAUGE'
+        end
+        object ManualAvatarsUpdateButton: TsButton
+          Tag = 20
+          Left = 174
+          Top = 75
+          Width = 115
+          Height = 25
+          Caption = 'Sprawd'#378' aktualizacje'
+          TabOrder = 3
+          OnClick = ManualAvatarsUpdateButtonClick
+          SkinData.SkinSection = 'BUTTON'
+        end
       end
       object AvatarsStyleGroupBox: TsGroupBox
+        Tag = 9
         Left = 8
         Top = 80
         Width = 299
         Height = 42
-        Caption = 'Styl awatar'#243'w'
+        Caption = 'Styl'
         TabOrder = 2
         SkinData.SkinSection = 'GROUPBOX'
         Checked = False
         object AvatarsStyleLabel: TsLabel
+          Tag = 10
           Left = 14
           Top = 20
           Width = 114
@@ -425,28 +432,8 @@ object BlablerForm: TBlablerForm
           Font.Name = 'Tahoma'
           Font.Style = []
         end
-        object UsedAvatarsStyleLabel: TsLabelFX
-          Left = 134
-          Top = 20
-          Width = 46
-          Height = 14
-          Caption = 'domy'#347'lny'
-          Color = clBtnFace
-          ParentColor = False
-          ParentFont = False
-          Font.Charset = EASTEUROPE_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          Angle = 0
-          Kind.KindType = ktCustom
-          Kind.Color = clGreen
-          Shadow.BlurCount = 0
-          Shadow.OffsetKeeper.LeftTop = 0
-          Shadow.OffsetKeeper.RightBottom = 1
-        end
         object EditAvatarsStyleLabel: TsLabel
+          Tag = 12
           Left = 185
           Top = 20
           Width = 39
@@ -461,7 +448,23 @@ object BlablerForm: TBlablerForm
           Font.Name = 'Tahoma'
           Font.Style = [fsUnderline]
         end
+        object UsedAvatarsStyleLabel: TsLabel
+          Tag = 11
+          Left = 134
+          Top = 20
+          Width = 45
+          Height = 13
+          Caption = 'domy'#347'lny'
+          ParentFont = False
+          Font.Charset = EASTEUROPE_CHARSET
+          Font.Color = clGreen
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          UseSkinColor = False
+        end
         object AvatarStyleDefaultButton: TsButton
+          Tag = 13
           Left = 119
           Top = 124
           Width = 89
@@ -473,6 +476,7 @@ object BlablerForm: TBlablerForm
           SkinData.SkinSection = 'BUTTON'
         end
         object AvatarStyleSaveButton: TsButton
+          Tag = 14
           Left = 214
           Top = 124
           Width = 75
@@ -509,10 +513,16 @@ object BlablerForm: TBlablerForm
       end
     end
     object HighlightMsgTabSheet: TsTabSheet
+      Tag = 6
       Caption = 'Wyr'#243#380'nianie'
       SkinData.CustomColor = False
       SkinData.CustomFont = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object EraseHighlightMsgSpeedButton: TsSpeedButton
+        Tag = 25
         Left = 17
         Top = 154
         Width = 23
@@ -562,6 +572,7 @@ object BlablerForm: TBlablerForm
         ShowCaption = False
       end
       object AddHighlightMsgsSpeedButton: TsSpeedButton
+        Tag = 27
         Left = 251
         Top = 154
         Width = 23
@@ -610,6 +621,7 @@ object BlablerForm: TBlablerForm
         ShowCaption = False
       end
       object RemoveHighlightMsgSpeedButton: TsSpeedButton
+        Tag = 28
         Left = 274
         Top = 154
         Width = 23
@@ -659,6 +671,7 @@ object BlablerForm: TBlablerForm
         ShowCaption = False
       end
       object HighlightMsgColorSelect: TsColorSelect
+        Tag = 26
         Left = 222
         Top = 154
         Width = 23
@@ -703,15 +716,25 @@ object BlablerForm: TBlablerForm
         StandardDlg = True
       end
       object HighlightMsgModeLabel: TsLabel
-        Left = 31
-        Top = 230
-        Width = 243
+        Tag = 29
+        Left = 17
+        Top = 186
+        Width = 156
         Height = 13
-        Caption = 'Dzia'#322'a tylko przy wyr'#243#380'nianiu tag'#243'w/u'#380'ytkownik'#243'w'
+        Caption = 'Spos'#243'b wyr'#243#380'niania wiadomo'#347'ci:'
+      end
+      object HighlightMsgModeInfoLabel: TsLabel
+        Tag = 31
+        Left = 17
+        Top = 233
+        Width = 249
+        Height = 13
+        Caption = 'Dzia'#322'a tylko przy wyr'#243#380'nianiu tag'#243'w / u'#380'ytkownik'#243'w'
         Enabled = False
         Visible = False
       end
       object HighlightMsgCheckBox: TsCheckBox
+        Tag = 22
         Left = 6
         Top = 6
         Width = 240
@@ -734,12 +757,14 @@ object BlablerForm: TBlablerForm
             Caption = 'Fraza'
             MaxWidth = 186
             MinWidth = 186
+            Tag = 23
             Width = 186
           end
           item
             Caption = 'Kolor'
             MaxWidth = 60
             MinWidth = 60
+            Tag = 24
             Width = 60
           end>
         RowSelect = True
@@ -769,15 +794,12 @@ object BlablerForm: TBlablerForm
         SkinData.SkinSection = 'EDIT'
       end
       object HighlightMsgModeComboBox: TsComboBox
+        Tag = 30
         Left = 17
-        Top = 203
+        Top = 205
         Width = 186
         Height = 22
         Alignment = taLeftJustify
-        BoundLabel.Active = True
-        BoundLabel.Caption = 'Spos'#243'b wyr'#243#380'niania wiadomo'#347'ci:'
-        BoundLabel.Indent = 4
-        BoundLabel.Layout = sclTopLeft
         SkinData.SkinSection = 'COMBOBOX'
         VerticalAlignment = taAlignTop
         Style = csOwnerDrawFixed
@@ -788,21 +810,10 @@ object BlablerForm: TBlablerForm
         Items.Strings = (
           'Zmieniaj kolor tekstu'
           'Zmieniaj kolor tekstu i odno'#347'nik'#243'w'
-          'Zmieniaj kolor szukanej frazy'
+          'Zmieniaj kolor frazy'
           'Zmieniaj kolor pola wiadomo'#347'ci')
       end
     end
-  end
-  object FileMemo: TMemo
-    Left = 0
-    Top = 0
-    Width = 0
-    Height = 0
-    Lines.Strings = (
-      'FileMemo')
-    TabOrder = 4
-    Visible = False
-    WordWrap = False
   end
   object ActionList: TActionList
     Left = 96
@@ -866,11 +877,6 @@ object BlablerForm: TBlablerForm
     HTTPOptions = [hoForceEncodeParams]
     Left = 96
     Top = 264
-  end
-  object AnimateTimer: TTimer
-    Enabled = False
-    Interval = 15
-    OnTimer = AnimateTimerTimer
   end
   object sSkinManager: TsSkinManager
     ExtendedBorders = True
