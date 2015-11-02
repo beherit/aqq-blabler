@@ -279,41 +279,6 @@ TColor GetWarningColor()
 }
 //---------------------------------------------------------------------------
 
-//Pobieranie informacji o pliku (wersja itp)
-UnicodeString GetFileInfo(wchar_t *ModulePath, String KeyName)
-{
-	LPVOID lpStr1 = NULL, lpStr2 = NULL;
-	WORD* wTmp;
-	DWORD dwHandlev = NULL;
-	UINT dwLength;
-	wchar_t sFileName[1024] = {0};
-	wchar_t sTmp[1024] = {0};
-	UnicodeString sInfo;
-	LPBYTE *pVersionInfo;
-
-	if(ModulePath == NULL) GetModuleFileName( NULL, sFileName, 1024);
-	else wcscpy(sFileName, ModulePath);
-
-	DWORD dwInfoSize = GetFileVersionInfoSize(sFileName, &dwHandlev);
-
-	if(dwInfoSize)
-	{
-		pVersionInfo = new LPBYTE[dwInfoSize];
-		if(GetFileVersionInfo(sFileName, dwHandlev, dwInfoSize, pVersionInfo))
-		{
-			if(VerQueryValue(pVersionInfo, L"\\VarFileInfo\\Translation", &lpStr1, &dwLength))
-			{
-				wTmp = (WORD*)lpStr1;
-				swprintf(sTmp, ("\\StringFileInfo\\%04x%04x\\" + KeyName).w_str(), *wTmp, *(wTmp + 1));
-				if(VerQueryValue(pVersionInfo, sTmp, &lpStr2, &dwLength)) sInfo = (LPCTSTR)lpStr2;
-			}
-		}
-		delete[] pVersionInfo;
-	}
-	return sInfo;
-}
-//---------------------------------------------------------------------------
-
 //Pobieranie danych z danego URL
 UnicodeString IdHTTPGet(UnicodeString URL)
 {
@@ -2438,10 +2403,6 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
 	PluginLink.CreateServiceFunction(L"sBlablerWatchTagItem",ServiceWatchTagItem);
 	//Tworzenie interfejsu szybkiego dostepu do ustawien wtyczki
 	BuildBlablerFastSettings();
-	//Definiowanie User-Agent dla polaczen HTTP
-	hBlablerForm->IdHTTP->Request->UserAgent = "AQQ IM Plugin: Blabler/" + GetFileInfo(GetPluginDir().w_str(), L"FileVersion") + " (+http://beherit.pl)";
-	hBlablerForm->AIdHTTP->Request->UserAgent = hBlablerForm->IdHTTP->Request->UserAgent;
-	hBlablerForm->AUIdHTTP->Request->UserAgent = hBlablerForm->IdHTTP->Request->UserAgent;
 	//Hook na aktwyna zakladke lub okno rozmowy (pokazywanie menu do cytowania, tworzenie buttonow)
 	PluginLink.HookEvent(AQQ_CONTACTS_BUDDY_ACTIVETAB,OnActiveTab);
 	//Hook na pokazywane wiadomosci
