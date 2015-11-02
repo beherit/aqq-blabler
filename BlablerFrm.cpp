@@ -76,863 +76,851 @@ __fastcall TBlablerForm::TBlablerForm(TComponent* Owner)
 
 void __fastcall TBlablerForm::WMTransparency(TMessage &Message)
 {
-  Application->ProcessMessages();
-  if(sSkinManager->Active) sSkinProvider->BorderForm->UpdateExBordersPos(true,(int)Message.LParam);
+	Application->ProcessMessages();
+	if(sSkinManager->Active) sSkinProvider->BorderForm->UpdateExBordersPos(true,(int)Message.LParam);
 }
 //---------------------------------------------------------------------------
 
 //Pobieranie pliku z danego URL
 bool __fastcall TBlablerForm::AIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
 {
-  //Ustawianie pozycji pliku na poczatek
-  File->Position = 0;
-  //Proba pobrania danych
-  try
-  {
-	//Wywolanie polaczenia
-	AIdHTTP->Get(URL, File);
-  }
-  //Blad
-  catch(const Exception& e)
-  {
-	//Hack na wywalanie sie IdHTTP
-	if(e.Message=="Connection Closed Gracefully.")
-	 AIdHTTP->CheckForGracefulDisconnect(false);
-	//Rozlaczenie polaczenia
-	AIdHTTP->Disconnect();
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
-	return false;
-  }
-  //Ustawianie pozycji pliku na poczatek
-  File->Position = 0;
-  //Polaczenie bylo zerwane
-  if(IdHTTPManualDisconnected)
-  {
-	IdHTTPManualDisconnected = false;
-	return false;
-  }
-  //Pobranie kodu odpowiedzi
-  int Response = AIdHTTP->ResponseCode;
-  //Wszystko ok
-  if(Response==200)
-   return true;
-  //Inne bledy
-  else
-   return false;
+	//Proba pobrania danych
+	try
+	{
+		//Wywolanie polaczenia
+		AIdHTTP->Get(URL, File);
+	}
+	//Blad
+	catch(const Exception& e)
+	{
+		//Hack na wywalanie sie IdHTTP
+		if(e.Message=="Connection Closed Gracefully.")
+			AIdHTTP->CheckForGracefulDisconnect(false);
+		//Rozlaczenie polaczenia
+		AIdHTTP->Disconnect();
+		//Ustawianie pozycji pliku na poczatek
+		File->Position = 0;
+		return false;
+	}
+	//Ustawianie pozycji pliku na poczatek
+	File->Position = 0;
+	//Polaczenie bylo zerwane
+	if(IdHTTPManualDisconnected)
+	{
+		IdHTTPManualDisconnected = false;
+		return false;
+	}
+	//Pobranie kodu odpowiedzi
+	int Response = AIdHTTP->ResponseCode;
+	//Wszystko ok
+	if(Response==200)
+		return true;
+	//Inne bledy
+	else
+		return false;
 }
 //---------------------------------------------------------------------------
 
 //Pobieranie pliku z danego URL (dla auto/manual update awatarow)
 bool __fastcall TBlablerForm::AUIdHTTPGetFileToMem(TMemoryStream* File, UnicodeString URL)
 {
-  //Ustawianie pozycji pliku na poczatek
-  File->Position = 0;
-  //Proba pobrania danych
-  try
-  {
-	//Wywolanie polaczenia
-	AUIdHTTP->Get(URL, File);
-  }
-  //Blad
-  catch(const Exception& e)
-  {
-	//Hack na wywalanie sie IdHTTP
-	if(e.Message=="Connection Closed Gracefully.")
-	 AUIdHTTP->CheckForGracefulDisconnect(false);
-	//Rozlaczenie polaczenia
-	AUIdHTTP->Disconnect();
 	//Ustawianie pozycji pliku na poczatek
 	File->Position = 0;
-	return false;
-  }
-  //Ustawianie pozycji pliku na poczatek
-  File->Position = 0;
-  //Polaczenie bylo zerwane
-  if(AUIdHTTPManualDisconnected)
-  {
-	AUIdHTTPManualDisconnected = false;
-	return false;
-  }
-  //Pobranie kodu odpowiedzi
-  int Response = AUIdHTTP->ResponseCode;
-  //Wszystko ok
-  if(Response==200)
-   return true;
-  //Inne bledy
-  else
-   return false;
+	//Proba pobrania danych
+	try
+	{
+		//Wywolanie polaczenia
+		AUIdHTTP->Get(URL, File);
+	}
+	//Blad
+	catch(const Exception& e)
+	{
+		//Hack na wywalanie sie IdHTTP
+		if(e.Message=="Connection Closed Gracefully.")
+			AUIdHTTP->CheckForGracefulDisconnect(false);
+		//Rozlaczenie polaczenia
+		AUIdHTTP->Disconnect();
+		//Ustawianie pozycji pliku na poczatek
+		File->Position = 0;
+		return false;
+	}
+	//Ustawianie pozycji pliku na poczatek
+	File->Position = 0;
+	//Polaczenie bylo zerwane
+	if(AUIdHTTPManualDisconnected)
+	{
+		AUIdHTTPManualDisconnected = false;
+		return false;
+	}
+	//Pobranie kodu odpowiedzi
+	int Response = AUIdHTTP->ResponseCode;
+	//Wszystko ok
+	if(Response==200)
+		return true;
+	//Inne bledy
+	else
+		return false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::FormCreate(TObject *Sender)
 {
-  //Wlaczona zaawansowana stylizacja okien
-  if(ChkSkinEnabled())
-  {
-	UnicodeString ThemeSkinDir = GetThemeSkinDir();
-	//Plik zaawansowanej stylizacji okien istnieje
-	if(FileExists(ThemeSkinDir + "\\\\Skin.asz"))
+	//Wlaczona zaawansowana stylizacja okien
+	if(ChkSkinEnabled())
 	{
-	  //Dane pliku zaawansowanej stylizacji okien
-	  ThemeSkinDir = StringReplace(ThemeSkinDir, "\\\\", "\\", TReplaceFlags() << rfReplaceAll);
-	  sSkinManager->SkinDirectory = ThemeSkinDir;
-	  sSkinManager->SkinName = "Skin.asz";
-	  //Ustawianie animacji AlphaControls
-	  if(ChkThemeAnimateWindows()) sSkinManager->AnimEffects->FormShow->Time = 200;
-	  else sSkinManager->AnimEffects->FormShow->Time = 0;
-	  sSkinManager->Effects->AllowGlowing = ChkThemeGlowing();
-	  //Zmiana kolorystyki AlphaControls
-	  sSkinManager->HueOffset = GetHUE();
-	  sSkinManager->Saturation = GetSaturation();
-	  sSkinManager->Brightness = GetBrightness();
-	  //Aktywacja skorkowania AlphaControls
-	  sSkinManager->Active = true;
+		UnicodeString ThemeSkinDir = GetThemeSkinDir();
+		//Plik zaawansowanej stylizacji okien istnieje
+		if(FileExists(ThemeSkinDir + "\\\\Skin.asz"))
+		{
+			//Dane pliku zaawansowanej stylizacji okien
+			ThemeSkinDir = StringReplace(ThemeSkinDir, "\\\\", "\\", TReplaceFlags() << rfReplaceAll);
+			sSkinManager->SkinDirectory = ThemeSkinDir;
+			sSkinManager->SkinName = "Skin.asz";
+			//Ustawianie animacji AlphaControls
+			if(ChkThemeAnimateWindows()) sSkinManager->AnimEffects->FormShow->Time = 200;
+			else sSkinManager->AnimEffects->FormShow->Time = 0;
+			sSkinManager->Effects->AllowGlowing = ChkThemeGlowing();
+			//Zmiana kolorystyki AlphaControls
+			sSkinManager->HueOffset = GetHUE();
+			sSkinManager->Saturation = GetSaturation();
+			sSkinManager->Brightness = GetBrightness();
+			//Aktywacja skorkowania AlphaControls
+			sSkinManager->Active = true;
+		}
+		//Brak pliku zaawansowanej stylizacji okien
+		else sSkinManager->Active = false;
 	}
-	//Brak pliku zaawansowanej stylizacji okien
+	//Zaawansowana stylizacja okien wylaczona
 	else sSkinManager->Active = false;
-  }
-  //Zaawansowana stylizacja okien wylaczona
-  else sSkinManager->Active = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::FormShow(TObject *Sender)
 {
-  //Wlaczona zaawansowana stylizacja okien
-  if(sSkinManager->Active)
-  {
-	//Kolor labelow
-	UsedAvatarsStyleLabel->Kind->Color = GetWarningColor();
-	LastAvatarsUpdateLabel->Kind->Color = UsedAvatarsStyleLabel->Kind->Color;
-  }
-  //Zaawansowana stylizacja okien wylaczona
-  else
-  {
-	//Kolor labelow
-	UsedAvatarsStyleLabel->Kind->Color = clGreen;
-	LastAvatarsUpdateLabel->Kind->Color = clGreen;
-  }
-  //Odczyt ustawien wtyczki
-  aLoadSettings->Execute();
-  //Wlaczanie przyciskow
-  SaveButton->Enabled = false;
-  //Ustawienie domyslnie wlaczonej karty ustawien
-  sPageControl->ActivePage = AvatarsTabSheet;
-  //Ustawienie kontrolek
-  AvatarsStyleGroupBox->Height = 42;
-  EditAvatarsStyleLabel->Caption = "(edytuj)";
+	//Wlaczona zaawansowana stylizacja okien
+	if(sSkinManager->Active)
+	{
+		//Kolor labelow
+		UsedAvatarsStyleLabel->Kind->Color = GetWarningColor();
+		LastAvatarsUpdateLabel->Kind->Color = UsedAvatarsStyleLabel->Kind->Color;
+	}
+	//Zaawansowana stylizacja okien wylaczona
+	else
+	{
+		//Kolor labelow
+		UsedAvatarsStyleLabel->Kind->Color = clGreen;
+		LastAvatarsUpdateLabel->Kind->Color = clGreen;
+	}
+	//Odczyt ustawien wtyczki
+	aLoadSettings->Execute();
+	//Wlaczanie przyciskow
+	SaveButton->Enabled = false;
+	//Ustawienie domyslnie wlaczonej karty ustawien
+	sPageControl->ActivePage = AvatarsTabSheet;
+	//Ustawienie kontrolek
+	AvatarsStyleGroupBox->Height = 42;
+	EditAvatarsStyleLabel->Caption = "(edytuj)";
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::aLoadSettingsExecute(TObject *Sender)
 {
-  TIniFile *Ini = new TIniFile( GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  //Awatary
-  AvatarWidthCSpinEdit->Value = Ini->ReadInteger("Avatars","Size",25);
-  UnicodeString tLastUpdate = Ini->ReadString("Avatars","LastUpdate","");
-  if(!tLastUpdate.IsEmpty())
-   LastAvatarsUpdateLabel->Caption = tLastUpdate;
-  else
-   LastAvatarsUpdateLabel->Caption = "brak danych";
-  int tLastUpdateCount = Ini->ReadInteger("Avatars","LastUpdateCount",0);
-  if(tLastUpdateCount) LastAvatarsUpdateLabel->Caption = LastAvatarsUpdateLabel->Caption + " (" + IntToStr(tLastUpdateCount) + ")";
-  AutoAvatarsUpdateComboBox->ItemIndex = Ini->ReadInteger("Avatars","UpdateMode",0);
-  //Wyroznianie
-  HighlightMsgCheckBox->Checked = Ini->ReadBool("HighlightMsg","Enabled",false);
-  HighlightMsgModeComboBox->ItemIndex = Ini->ReadInteger("HighlightMsg","Mode",0);
-  HighlightMsgListView->Clear();
-  TStringList *HighlightItems = new TStringList;
-  Ini->ReadSection("HighlightItems",HighlightItems);
-  if(HighlightItems->Count)
-  {
-	for(int Count=0;Count<HighlightItems->Count;Count++)
+	TIniFile *Ini = new TIniFile( GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+	//Awatary
+	AvatarWidthCSpinEdit->Value = Ini->ReadInteger("Avatars","Size",25);
+	UnicodeString tLastUpdate = Ini->ReadString("Avatars","LastUpdate","");
+	if(!tLastUpdate.IsEmpty())
+		LastAvatarsUpdateLabel->Caption = tLastUpdate;
+	else
+		LastAvatarsUpdateLabel->Caption = "brak danych";
+	int tLastUpdateCount = Ini->ReadInteger("Avatars","LastUpdateCount",0);
+	if(tLastUpdateCount) LastAvatarsUpdateLabel->Caption = LastAvatarsUpdateLabel->Caption + " (" + IntToStr(tLastUpdateCount) + ")";
+	AutoAvatarsUpdateComboBox->ItemIndex = Ini->ReadInteger("Avatars","UpdateMode",0);
+	//Wyroznianie
+	HighlightMsgCheckBox->Checked = Ini->ReadBool("HighlightMsg","Enabled",false);
+	HighlightMsgModeComboBox->ItemIndex = Ini->ReadInteger("HighlightMsg","Mode",0);
+	HighlightMsgListView->Clear();
+	TStringList *HighlightItems = new TStringList;
+	Ini->ReadSection("HighlightItems",HighlightItems);
+	if(HighlightItems->Count)
 	{
-	  UnicodeString ItemName = HighlightItems->Strings[Count];
-	  UnicodeString HighlightItem = Ini->ReadString("HighlightItems",ItemName,"");
-	  if(!HighlightItem.IsEmpty())
-	  {
-		UnicodeString Item = HighlightItem;
-		Item = Item.Delete(Item.Pos(";"),Item.Length());
-		UnicodeString Color = HighlightItem;
-		Color = Color.Delete(1,Color.Pos(";"));
-		HighlightMsgListView->Items->Add();
-		HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->Caption = Item;
-		HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->SubItems->Add(Color);
-	  }
+		for(int Count=0;Count<HighlightItems->Count;Count++)
+		{
+			UnicodeString ItemName = HighlightItems->Strings[Count];
+			UnicodeString HighlightItem = Ini->ReadString("HighlightItems",ItemName,"");
+			if(!HighlightItem.IsEmpty())
+			{
+				UnicodeString Item = HighlightItem;
+				Item = Item.Delete(Item.Pos(";"),Item.Length());
+				UnicodeString Color = HighlightItem;
+				Color = Color.Delete(1,Color.Pos(";"));
+				HighlightMsgListView->Items->Add();
+				HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->Caption = Item;
+				HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->SubItems->Add(Color);
+			}
+		}
 	}
-  }
-  delete HighlightItems;
-   HighlightMsgListView->Enabled = HighlightMsgCheckBox->Checked;
-   EraseHighlightMsgSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
-   AddHighlightMsgsSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
-   if(HighlightMsgCheckBox->Checked==false) RemoveHighlightMsgSpeedButton->Enabled = false;
-   HighlightMsgColorSelect->Enabled = HighlightMsgCheckBox->Checked;
-   ColorHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
-   ItemHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
-   HighlightMsgModeComboBox->Enabled = HighlightMsgCheckBox->Checked;
-   if(HighlightMsgModeComboBox->ItemIndex==2)
-	HighlightMsgModeLabel->Visible = true;
-   else
-	HighlightMsgModeLabel->Visible = false;
-  delete Ini;
+	delete HighlightItems;
+	HighlightMsgListView->Enabled = HighlightMsgCheckBox->Checked;
+	EraseHighlightMsgSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
+	AddHighlightMsgsSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
+	if(HighlightMsgCheckBox->Checked==false) RemoveHighlightMsgSpeedButton->Enabled = false;
+	HighlightMsgColorSelect->Enabled = HighlightMsgCheckBox->Checked;
+	ColorHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
+	ItemHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
+	HighlightMsgModeComboBox->Enabled = HighlightMsgCheckBox->Checked;
+	if(HighlightMsgModeComboBox->ItemIndex==2)
+		HighlightMsgModeLabel->Visible = true;
+	else
+		HighlightMsgModeLabel->Visible = false;
+	delete Ini;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::aSaveSettingsExecute(TObject *Sender)
 {
-  TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  //Awatary
-  Ini->WriteInteger("Avatars","Size",AvatarWidthCSpinEdit->Value);
-  Ini->WriteString("Avatars","UpdateMode",AutoAvatarsUpdateComboBox->ItemIndex);
-  //Wyroznianie
-  Ini->WriteBool("HighlightMsg","Enabled",HighlightMsgCheckBox->Checked);
-  Ini->WriteInteger("HighlightMsg","Mode",HighlightMsgModeComboBox->ItemIndex);
-  Ini->EraseSection("HighlightItems");
-  if(HighlightMsgListView->Items!=0)
-  {
-	for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
-	 Ini->WriteString("HighlightItems",("Item"+IntToStr(Count+1)),HighlightMsgListView->Items->Item[Count]->Caption + ";" + HighlightMsgListView->Items->Item[Count]->SubItems->Strings[0]);
-  }
-  delete Ini;
+	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+	//Awatary
+	Ini->WriteInteger("Avatars","Size",AvatarWidthCSpinEdit->Value);
+	Ini->WriteString("Avatars","UpdateMode",AutoAvatarsUpdateComboBox->ItemIndex);
+	//Wyroznianie
+	Ini->WriteBool("HighlightMsg","Enabled",HighlightMsgCheckBox->Checked);
+	Ini->WriteInteger("HighlightMsg","Mode",HighlightMsgModeComboBox->ItemIndex);
+	Ini->EraseSection("HighlightItems");
+	if(HighlightMsgListView->Items!=0)
+	{
+		for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
+			Ini->WriteString("HighlightItems",("Item"+IntToStr(Count+1)),HighlightMsgListView->Items->Item[Count]->Caption + ";" + HighlightMsgListView->Items->Item[Count]->SubItems->Strings[0]);
+	}
+	delete Ini;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::aSettingsChangedExecute(TObject *Sender)
 {
-  //Aktywowanie przycisku zapisywania ustawien
-  SaveButton->Enabled = true;
+	//Aktywowanie przycisku zapisywania ustawien
+	SaveButton->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 //Wymuszanie rozlaczenia sie protokolow HTTP
 void __fastcall TBlablerForm::aForceDisconnectExecute(TObject *Sender)
 {
-  //Wymuszenie zakonczenie petli watkow
-  ForceDisconnect = true;
-  //Rozlaczenie IdHTTP
-  IdHTTP->Disconnect();
-  AIdHTTP->Disconnect();
-  AUIdHTTP->Disconnect();
+	//Wymuszenie zakonczenie petli watkow
+	ForceDisconnect = true;
+	//Rozlaczenie IdHTTP
+	IdHTTP->Disconnect();
+	AIdHTTP->Disconnect();
+	AUIdHTTP->Disconnect();
 }
 //---------------------------------------------------------------------------
 
 //Zamkniecie formy ustawien
 void __fastcall TBlablerForm::aExitExecute(TObject *Sender)
 {
-  Close();
+	Close();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::SaveButtonClick(TObject *Sender)
 {
-  //Wylaczanie przyciskow
-  SaveButton->Enabled = false;
-  CancelButton->Enabled = false;
-  OKButton->Enabled = false;
-  //Zapisanie ustawien
-  aSaveSettings->Execute();
-  //Odczyt ustawien w rdzeniu wtyczki
-  LoadSettings();
-  //Wlaczanie przyciskow
-  CancelButton->Enabled = true;
-  OKButton->Enabled = true;
+	//Wylaczanie przyciskow
+	SaveButton->Enabled = false;
+	CancelButton->Enabled = false;
+	OKButton->Enabled = false;
+	//Zapisanie ustawien
+	aSaveSettings->Execute();
+	//Odczyt ustawien w rdzeniu wtyczki
+	LoadSettings();
+	//Wlaczanie przyciskow
+	CancelButton->Enabled = true;
+	OKButton->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::OKButtonClick(TObject *Sender)
 {
-  //Wylaczanie przyciskow
-  SaveButton->Enabled = false;
-  CancelButton->Enabled = false;
-  OKButton->Enabled = false;
-  //Zapisanie ustawien
-  aSaveSettings->Execute();
-  //Odczyt ustawien w rdzeniu wtyczki
-  LoadSettings();
-  //Zamkniecie formy
-  Close();
-  //Wlaczanie przyciskow
-  CancelButton->Enabled = true;
-  OKButton->Enabled = true;
+	//Wylaczanie przyciskow
+	SaveButton->Enabled = false;
+	CancelButton->Enabled = false;
+	OKButton->Enabled = false;
+	//Zapisanie ustawien
+	aSaveSettings->Execute();
+	//Odczyt ustawien w rdzeniu wtyczki
+	LoadSettings();
+	//Zamkniecie formy
+	Close();
+	//Wlaczanie przyciskow
+	CancelButton->Enabled = true;
+	OKButton->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AvatarWidthCSpinEditChange(TObject *Sender)
 {
-  AvatarHeightEdit->Text = AvatarWidthCSpinEdit->Value;
-  aSettingsChanged->Execute();
+	AvatarHeightEdit->Text = AvatarWidthCSpinEdit->Value;
+	aSettingsChanged->Execute();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AvatarsStyleMemoChange(TObject *Sender)
 {
-  //Zezwalanie/blokowanie zapisania stylu awatarow
-  if(AvatarsStyleMemo->Text.Pos("CC_AVATAR"))
-   AvatarStyleSaveButton->Enabled = true;
-  else
-   AvatarStyleSaveButton->Enabled = false;
-  //Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
-  if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-   AvatarStyleDefaultButton->Enabled = true;
-  else
-   AvatarStyleDefaultButton->Enabled = false;
+	//Zezwalanie/blokowanie zapisania stylu awatarow
+	if(AvatarsStyleMemo->Text.Pos("CC_AVATAR"))
+		AvatarStyleSaveButton->Enabled = true;
+	else
+		AvatarStyleSaveButton->Enabled = false;
+	//Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
+	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
+		AvatarStyleDefaultButton->Enabled = true;
+	else
+		AvatarStyleDefaultButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AvatarStyleDefaultButtonClick(TObject *Sender)
 {
-  //Przywracanie domyslnego stylu awatarow
-  if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-   AvatarsStyleMemo->Text = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
+	//Przywracanie domyslnego stylu awatarow
+	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
+		AvatarsStyleMemo->Text = "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>";
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AvatarStyleSaveButtonClick(TObject *Sender)
 {
-  //Zapisanie stylu awatarow do pliku
-  TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  Ini->WriteString("Avatars", "Style64", EncodeBase64(AvatarsStyleMemo->Text));
-  delete Ini;
-  //Ustawienie stylu w rdzeniu wtyczki
-  SetAvatarStyle(AvatarsStyleMemo->Text);
-  //Info o rodzaju stylu
-  if(AvatarsStyleMemo->Text == "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-  {
-	UsedAvatarsStyleLabel->Caption = "domyœlny";
-	EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
-  }
-  else
-  {
-	UsedAvatarsStyleLabel->Caption = "w³asny";
-	EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
-  }
-  //Zamkniecie edycji stylu awatarow
-  EditAvatarsStyleLabel->Caption = "(edytuj)";
-  AnimateMode = false;
-  AnimateTimer->Enabled = true;
+	//Zapisanie stylu awatarow do pliku
+	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+	Ini->WriteString("Avatars", "Style64", EncodeBase64(AvatarsStyleMemo->Text));
+	delete Ini;
+	//Ustawienie stylu w rdzeniu wtyczki
+	SetAvatarStyle(AvatarsStyleMemo->Text);
+	//Info o rodzaju stylu
+	if(AvatarsStyleMemo->Text == "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
+	{
+		UsedAvatarsStyleLabel->Caption = "domyœlny";
+		EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
+	}
+	else
+	{
+		UsedAvatarsStyleLabel->Caption = "w³asny";
+		EditAvatarsStyleLabel->Left = UsedAvatarsStyleLabel->Left + UsedAvatarsStyleLabel->Width + 6;
+	}
+	//Zamkniecie edycji stylu awatarow
+	EditAvatarsStyleLabel->Caption = "(edytuj)";
+	AnimateMode = false;
+	AnimateTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::EditAvatarsStyleLabelClick(TObject *Sender)
 {
-  //Wylaczanie timera animacji
-  if(AnimateTimer->Enabled)
-   AnimateTimer->Enabled = false;
-  //Chowanie edycji stylu awatarow
-  if(AvatarsStyleGroupBox->Height==42)
-  {
-	EditAvatarsStyleLabel->Caption = "(anuluj edycjê)";
-	AvatarsStyleMemo->Text = GetAvatarStyle();
-	AvatarStyleSaveButton->Enabled = false;
-	AnimateMode = true;
-	AnimateTimer->Enabled = true;
-  }
-  //Pokazywanie edycji stylu awatarow
-  else
-  {
-	EditAvatarsStyleLabel->Caption = "(edytuj)";
-	AnimateMode = false;
-	AnimateTimer->Enabled = true;
-  }
-  //Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
-  if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
-   AvatarStyleDefaultButton->Enabled = true;
-  else
-   AvatarStyleDefaultButton->Enabled = false;
+	//Wylaczanie timera animacji
+	if(AnimateTimer->Enabled)
+		AnimateTimer->Enabled = false;
+	//Chowanie edycji stylu awatarow
+	if(AvatarsStyleGroupBox->Height==42)
+	{
+		EditAvatarsStyleLabel->Caption = "(anuluj edycjê)";
+		AvatarsStyleMemo->Text = GetAvatarStyle();
+		AvatarStyleSaveButton->Enabled = false;
+		AnimateMode = true;
+		AnimateTimer->Enabled = true;
+	}
+	//Pokazywanie edycji stylu awatarow
+	else
+	{
+		EditAvatarsStyleLabel->Caption = "(edytuj)";
+		AnimateMode = false;
+		AnimateTimer->Enabled = true;
+	}
+	//Zezwalanie/blokowanie przywracanie domyslnego stylu awatarow
+	if(AvatarsStyleMemo->Text != "<span style=\"display: inline-block; padding: 2px 4px 0px 1px; vertical-align: middle;\">CC_AVATAR</span>")
+		AvatarStyleDefaultButton->Enabled = true;
+	else
+		AvatarStyleDefaultButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::ManualAvatarsUpdateButtonClick(TObject *Sender)
 {
-  if(ManualAvatarsUpdateButton->Caption=="SprawdŸ aktualizacje")
-  {
-	//Zmiana caption na buttonie
-	ManualAvatarsUpdateButton->Caption = "Przerwij aktualizacje";
-	//Sprawdzanie czy folder awatar istnieje
-	if(!DirectoryExists(GetPluginUserDirW() + "\\Blabler\\Avatars"))
-	 CreateDir(GetPluginUserDirW() + "\\Blabler\\Avatars");
-	//Wlaczenie paska postepu
-	ProgressBar->Position = 0;
-	ProgressBar->Visible = true;
-	ProgressLabel->Caption = "Pobieranie danych...";
-	ProgressLabel->Visible = true;
-	//Wlaczenie paska postepu na taskbarze
-	Taskbar->ProgressValue = 0;
-	Taskbar->ProgressState = TTaskBarProgressState::Normal;
-	//Pobieranie listy plikow
-	FileListBox->Directory = "";
-	FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
-	//Ignorowanie plikow *.tmp i plikow ze spacja (np. konflikty stworzone przez Dropbox'a)
-	for(int Count=0;Count<FileListBox->Items->Count;Count++)
+	if(ManualAvatarsUpdateButton->Caption=="SprawdŸ aktualizacje")
 	{
-	  if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
-	  {
-		DeleteFile(FileListBox->Items->Strings[Count]);
-		FileListBox->Items->Strings[Count] = "TMP_DELETE";
-	  }
-	  else if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(" ")>0)
-	  {
-		DeleteFile(FileListBox->Items->Strings[Count]);
-		FileListBox->Items->Strings[Count] = "TMP_DELETE";
-	  }
+		//Zmiana caption na buttonie
+		ManualAvatarsUpdateButton->Caption = "Przerwij aktualizacje";
+		//Sprawdzanie czy folder awatar istnieje
+		if(!DirectoryExists(GetPluginUserDirW() + "\\Blabler\\Avatars"))
+			CreateDir(GetPluginUserDirW() + "\\Blabler\\Avatars");
+		//Wlaczenie paska postepu
+		ProgressBar->Position = 0;
+		ProgressBar->Visible = true;
+		ProgressLabel->Caption = "Pobieranie danych...";
+		ProgressLabel->Visible = true;
+		//Wlaczenie paska postepu na taskbarze
+		Taskbar->ProgressValue = 0;
+		Taskbar->ProgressState = TTaskBarProgressState::Normal;
+		//Pobieranie listy plikow
+		FileListBox->Directory = "";
+		FileListBox->Directory = GetPluginUserDirW() + "\\Blabler\\Avatars";
+		//Ignorowanie plikow *.tmp i plikow ze spacja (np. konflikty stworzone przez Dropbox'a)
+		for(int Count=0;Count<FileListBox->Items->Count;Count++)
+		{
+			if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(".tmp")>0)
+			{
+				DeleteFile(FileListBox->Items->Strings[Count]);
+				FileListBox->Items->Strings[Count] = "TMP_DELETE";
+			}
+			else if(ExtractFileName(FileListBox->Items->Strings[Count]).Pos(" ")>0)
+			{
+				DeleteFile(FileListBox->Items->Strings[Count]);
+				FileListBox->Items->Strings[Count] = "TMP_DELETE";
+			}
+		}
+		while(FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
+			FileListBox->Items->Delete(FileListBox->Items->IndexOf("TMP_DELETE"));
+		//Ustawianie maksymalnego paska postepu
+		ProgressBar->Max = FileListBox->Items->Count;
+		//Ustawianie maksymalnego paska postepu na taskbarze
+		Taskbar->ProgressMaxValue = FileListBox->Items->Count;
+		//Wlacznie aktualizacji
+		ManualAvatarsUpdateThread->Start();
 	}
-	while(FileListBox->Items->IndexOf("TMP_DELETE")!=-1)
-	 FileListBox->Items->Delete(FileListBox->Items->IndexOf("TMP_DELETE"));
-	//Ustawianie maksymalnego paska postepu
-	ProgressBar->Max = FileListBox->Items->Count;
-	//Ustawianie maksymalnego paska postepu na taskbarze
-	Taskbar->ProgressMaxValue = FileListBox->Items->Count;
-	//Wlacznie aktualizacji
-	ManualAvatarsUpdateThread->Start();
-  }
-  else
-  {
-	//Wylaczanie buttona
-	ManualAvatarsUpdateButton->Enabled = false;
-	//Wymuszenie zakonczenie petli
-	ForceDisconnect = true;
-	//Rozlaczenie IdHTTP
-	AUIdHTTP->Disconnect();
-  }
+	else
+	{
+		//Wylaczanie buttona
+		ManualAvatarsUpdateButton->Enabled = false;
+		//Wymuszenie zakonczenie petli
+		ForceDisconnect = true;
+		//Rozlaczenie IdHTTP
+		AUIdHTTP->Disconnect();
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::HighlightMsgCheckBoxClick(TObject *Sender)
 {
-  aSettingsChanged->Execute();
-  HighlightMsgListView->Enabled = HighlightMsgCheckBox->Checked;
-  EraseHighlightMsgSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
-  AddHighlightMsgsSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
-  if(HighlightMsgCheckBox->Checked==false) RemoveHighlightMsgSpeedButton->Enabled = false;
-  HighlightMsgColorSelect->Enabled = HighlightMsgCheckBox->Checked;
-  ColorHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
-  ItemHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
-  HighlightMsgModeComboBox->Enabled = HighlightMsgCheckBox->Checked;
+	aSettingsChanged->Execute();
+	HighlightMsgListView->Enabled = HighlightMsgCheckBox->Checked;
+	EraseHighlightMsgSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
+	AddHighlightMsgsSpeedButton->Enabled = HighlightMsgCheckBox->Checked;
+	if(HighlightMsgCheckBox->Checked==false) RemoveHighlightMsgSpeedButton->Enabled = false;
+	HighlightMsgColorSelect->Enabled = HighlightMsgCheckBox->Checked;
+	ColorHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
+	ItemHighlightMsgEdit->Enabled = HighlightMsgCheckBox->Checked;
+	HighlightMsgModeComboBox->Enabled = HighlightMsgCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::HighlightMsgListViewEdited(TObject *Sender, TListItem *Item,
-		  UnicodeString &S)
+			UnicodeString &S)
 {
-  aSettingsChanged->Execute();
+	aSettingsChanged->Execute();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::HighlightMsgListViewKeyDown(TObject *Sender, WORD &Key,
-		  TShiftState Shift)
+			TShiftState Shift)
 {
-  //Wcisniecie przycisku Delete
-  if(Key==46)
-  {
-	//Usuwanie elementu
-	if(HighlightMsgListView->ItemIndex!=-1)
+	//Wcisniecie przycisku Delete
+	if(Key==46)
 	{
-	  HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Delete();
-	  SaveButton->Enabled = true;
+		//Usuwanie elementu
+		if(HighlightMsgListView->ItemIndex!=-1)
+		{
+			HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Delete();
+			SaveButton->Enabled = true;
+		}
 	}
-  }
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::HighlightMsgListViewSelectItem(TObject *Sender, TListItem *Item,
-		  bool Selected)
+			bool Selected)
 {
-  //Wczytyawanie elementow szybkiej edycji
-  if(HighlightMsgListView->ItemIndex!=-1)
-  {
-	ItemHighlightMsgEdit->Text = HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Caption;
-	ColorHighlightMsgEdit->Text = HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->SubItems->Strings[0];
-	RemoveHighlightMsgSpeedButton->Enabled = true;
-  }
-  else
-   RemoveHighlightMsgSpeedButton->Enabled = false;
+	//Wczytyawanie elementow szybkiej edycji
+	if(HighlightMsgListView->ItemIndex!=-1)
+	{
+		ItemHighlightMsgEdit->Text = HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Caption;
+		ColorHighlightMsgEdit->Text = HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->SubItems->Strings[0];
+		RemoveHighlightMsgSpeedButton->Enabled = true;
+	}
+	else
+		RemoveHighlightMsgSpeedButton->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 //Przywrocenie domylsnych zawartosci kontrolek
 void __fastcall TBlablerForm::EraseHighlightMsgSpeedButtonClick(TObject *Sender)
 {
-  ItemHighlightMsgEdit->Text = "";
-  ColorHighlightMsgEdit->Text = "#FF0000";
-  HighlightMsgListView->ItemIndex = -1;
+	ItemHighlightMsgEdit->Text = "";
+	ColorHighlightMsgEdit->Text = "#FF0000";
+	HighlightMsgListView->ItemIndex = -1;
 }
 //---------------------------------------------------------------------------
 
 //Pobieranie koloru w HEX z komponentu
 void __fastcall TBlablerForm::HighlightMsgColorSelectChange(TObject *Sender)
 {
-  TColor Color = HighlightMsgColorSelect->ColorValue;
-  int R,G,B;
-  R = GetRValue(Color);
-  G = GetGValue(Color);
-  B = GetBValue(Color);
-  ColorHighlightMsgEdit->Text = "#" + IntToHex(R,2) + IntToHex(G,2) + IntToHex(B,2);
+	TColor Color = HighlightMsgColorSelect->ColorValue;
+	int R,G,B;
+	R = GetRValue(Color);
+	G = GetGValue(Color);
+	B = GetBValue(Color);
+	ColorHighlightMsgEdit->Text = "#" + IntToHex(R,2) + IntToHex(G,2) + IntToHex(B,2);
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AddHighlightMsgsSpeedButtonClick(TObject *Sender)
 {
-  //Edycja juz dodanych elementow
-  if(HighlightMsgListView->ItemIndex!=-1)
-  {
-	//Sprawdzanie czy element jest juz dodany
-	bool NewItem = true;
-	for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
+	//Edycja juz dodanych elementow
+	if(HighlightMsgListView->ItemIndex!=-1)
 	{
-	  if(HighlightMsgListView->Items->Item[Count]->Caption.LowerCase()==ItemHighlightMsgEdit->Text.LowerCase())
-	  {
-		if(HighlightMsgListView->Items->Item[Count]->SubItems->Strings[0].LowerCase()==ColorHighlightMsgEdit->Text.LowerCase())
-		 NewItem = false;
-		Count = HighlightMsgListView->Items->Count;
-	  }
-	}
-	//Element ulegl zmianie
-	if(NewItem)
-	{
-	  HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Caption = ItemHighlightMsgEdit->Text;
-	  HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->SubItems->Strings[0] = ColorHighlightMsgEdit->Text;
-	  SaveButton->Enabled = true;
-	}
-  }
-  //Dowananie nowych elementow
-  else
-  {
-	if((!ItemHighlightMsgEdit->Text.IsEmpty())&&(!ColorHighlightMsgEdit->Text.IsEmpty()))
-	{
-      ItemHighlightMsgEdit->Text = StringReplace(ItemHighlightMsgEdit->Text, ";", "", TReplaceFlags() << rfReplaceAll);
-	  ColorHighlightMsgEdit->Text = StringReplace(ColorHighlightMsgEdit->Text, ";", "", TReplaceFlags() << rfReplaceAll);
-	  //Sprawdzanie czy element jest juz dodany
-	  bool NewItem = true;
-	  for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
-	  {
-		if(HighlightMsgListView->Items->Item[Count]->Caption.LowerCase()==ItemHighlightMsgEdit->Text.LowerCase())
+		//Sprawdzanie czy element jest juz dodany
+		bool NewItem = true;
+		for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
 		{
-		  NewItem = false;
-		  Count = HighlightMsgListView->Items->Count;
+			if(HighlightMsgListView->Items->Item[Count]->Caption.LowerCase()==ItemHighlightMsgEdit->Text.LowerCase())
+			{
+				if(HighlightMsgListView->Items->Item[Count]->SubItems->Strings[0].LowerCase()==ColorHighlightMsgEdit->Text.LowerCase())
+					NewItem = false;
+				Count = HighlightMsgListView->Items->Count;
+			}
 		}
-	  }
-	  //Element nie jest jeszcze dodany
-	  if(NewItem)
-	  {
-
-		HighlightMsgListView->Items->Add();
-		HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->Caption = ItemHighlightMsgEdit->Text;
-		HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->SubItems->Add(ColorHighlightMsgEdit->Text);
-		SaveButton->Enabled = true;
-		ItemHighlightMsgEdit->Text = "";
-	  }
+		//Element ulegl zmianie
+		if(NewItem)
+		{
+			HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Caption = ItemHighlightMsgEdit->Text;
+			HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->SubItems->Strings[0] = ColorHighlightMsgEdit->Text;
+			SaveButton->Enabled = true;
+		}
 	}
-  }
+	//Dowananie nowych elementow
+	else
+	{
+		if((!ItemHighlightMsgEdit->Text.IsEmpty())&&(!ColorHighlightMsgEdit->Text.IsEmpty()))
+		{
+			ItemHighlightMsgEdit->Text = StringReplace(ItemHighlightMsgEdit->Text, ";", "", TReplaceFlags() << rfReplaceAll);
+			ColorHighlightMsgEdit->Text = StringReplace(ColorHighlightMsgEdit->Text, ";", "", TReplaceFlags() << rfReplaceAll);
+			//Sprawdzanie czy element jest juz dodany
+			bool NewItem = true;
+			for(int Count=0;Count<HighlightMsgListView->Items->Count;Count++)
+			{
+				if(HighlightMsgListView->Items->Item[Count]->Caption.LowerCase()==ItemHighlightMsgEdit->Text.LowerCase())
+				{
+					NewItem = false;
+					Count = HighlightMsgListView->Items->Count;
+				}
+			}
+			//Element nie jest jeszcze dodany
+			if(NewItem)
+			{
+				HighlightMsgListView->Items->Add();
+				HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->Caption = ItemHighlightMsgEdit->Text;
+				HighlightMsgListView->Items->Item[HighlightMsgListView->Items->Count-1]->SubItems->Add(ColorHighlightMsgEdit->Text);
+				SaveButton->Enabled = true;
+				ItemHighlightMsgEdit->Text = "";
+			}
+		}
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::RemoveHighlightMsgSpeedButtonClick(TObject *Sender)
 {
-  //Usuwanie elementu
-  if(HighlightMsgListView->ItemIndex!=-1)
-  {
-	HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Delete();
-	SaveButton->Enabled = true;
-  }
+	//Usuwanie elementu
+	if(HighlightMsgListView->ItemIndex!=-1)
+	{
+		HighlightMsgListView->Items->Item[HighlightMsgListView->ItemIndex]->Delete();
+		SaveButton->Enabled = true;
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::HighlightMsgModeComboBoxChange(TObject *Sender)
 {
-  aSettingsChanged->Execute();
-  if(HighlightMsgModeComboBox->ItemIndex==2)
-   HighlightMsgModeLabel->Visible = true;
-  else
-   HighlightMsgModeLabel->Visible = false;
+	aSettingsChanged->Execute();
+	if(HighlightMsgModeComboBox->ItemIndex==2)
+		HighlightMsgModeLabel->Visible = true;
+	else
+		HighlightMsgModeLabel->Visible = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AnimateTimerTimer(TObject *Sender)
 {
-  //Pokazywanie ukrytego panelu
-  if(AnimateMode)
-  {
-	if(AvatarsStyleGroupBox->Height < 162)
-	 AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height + 5;
+	//Pokazywanie ukrytego panelu
+	if(AnimateMode)
+	{
+		if(AvatarsStyleGroupBox->Height < 162)
+			AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height + 5;
+		else
+			AnimateTimer->Enabled = false;
+	}
+	//Chowanie panelu
 	else
-	 AnimateTimer->Enabled = false;
-  }
-  //Chowanie panelu
-  else
-  {
-	if(AvatarsStyleGroupBox->Height > 42)
-	 AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height - 5;
-	else
-	 AnimateTimer->Enabled = false;
-  }
+	{
+		if(AvatarsStyleGroupBox->Height > 42)
+			AvatarsStyleGroupBox->Height = AvatarsStyleGroupBox->Height - 5;
+		else
+			AnimateTimer->Enabled = false;
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::ManualAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
 {
-  //Petla aktualizacji
-  int NewAvatars=0;
-  for(int Count=0;Count<FileListBox->Items->Count;Count++)
-  {
-	//Ustawianie paska postepu
-	FileListBox->ItemIndex = Count;
-	ProgressLabel->Caption = "(" + IntToStr(Count+1) + "/" + IntToStr(FileListBox->Items->Count) + ") " + ExtractFileName(FileListBox->FileName) + "...";
-	//Tworzenie nowego pliku w pamieci
-	TMemoryStream* MemFile = new TMemoryStream;
-	MemFile->Position = 0;
-	//Ustalanie adresu pobierania awataru
-	UnicodeString UpdateURL;
-	UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) +"/standard";
-	//Pobieranie awatara
-	if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
+	//Petla aktualizacji
+	int NewAvatars=0;
+	for(int Count=0;Count<FileListBox->Items->Count;Count++)
 	{
-	  MemFile->Position = 0;
-
-	  if(MemFile->Size!=0)
-	  {
-		MemFile->SaveToFile(FileListBox->FileName + ".tmp");
-		delete MemFile;
-
-		if(MD5File(FileListBox->FileName + ".tmp")!=MD5File(FileListBox->FileName))
+		//Ustawianie paska postepu
+		FileListBox->ItemIndex = Count;
+		ProgressLabel->Caption = "(" + IntToStr(Count+1) + "/" + IntToStr(FileListBox->Items->Count) + ") " + ExtractFileName(FileListBox->FileName) + "...";
+		//Tworzenie nowego pliku w pamieci
+		TMemoryStream* MemFile = new TMemoryStream;
+		MemFile->Position = 0;
+		//Ustalanie adresu pobierania awataru
+		UnicodeString UpdateURL;
+		UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) +"/standard";
+		//Pobieranie awatara
+		if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
 		{
-		  DeleteFile(FileListBox->FileName);
-		  MoveFile((FileListBox->FileName + ".tmp").w_str(),FileListBox->FileName.w_str());
-		  NewAvatars++;
+			MemFile->Position = 0;
+			if(MemFile->Size!=0)
+			{
+				MemFile->SaveToFile(FileListBox->FileName + ".tmp");
+				delete MemFile;
+				if(MD5File(FileListBox->FileName + ".tmp")!=MD5File(FileListBox->FileName))
+				{
+					DeleteFile(FileListBox->FileName);
+					MoveFile((FileListBox->FileName + ".tmp").w_str(),FileListBox->FileName.w_str());
+					NewAvatars++;
+				}
+				else DeleteFile(FileListBox->FileName + ".tmp");
+			}
+			else delete MemFile;
 		}
-		else
-		 DeleteFile(FileListBox->FileName + ".tmp");
-	  }
-	  else
-	   delete MemFile;
+		else delete MemFile;
+		//Kolejny plik
+		ProgressBar->Position++;
+		Taskbar->ProgressValue++;
+		//Wymuszenie wylaczenia
+		if(ForceDisconnect) Count = FileListBox->Items->Count;
 	}
-	else
-	 delete MemFile;
-	//Kolejny plik
-	ProgressBar->Position++;
-	Taskbar->ProgressValue++;
-	//Wymuszenie wylaczenia
-	if(ForceDisconnect) Count = FileListBox->Items->Count;
-  }
-  //Ustawianie daty ostatniej aktualizacji
-  TDateTime pLogTime = TDateTime::CurrentDateTime();
-  UnicodeString pLogTimeStr = pLogTime.FormatString("yyyy-mm-dd hh:nn:ss");
-  if(NewAvatars) LastAvatarsUpdateLabel->Caption = pLogTimeStr + " (" + IntToStr(NewAvatars) + ")";
-  else LastAvatarsUpdateLabel->Caption = pLogTimeStr;
-  TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  Ini->WriteString("Avatars", "LastUpdate", pLogTimeStr);
-  Ini->WriteInteger("Avatars", "LastUpdateCount", NewAvatars);
-  delete Ini;
-  //Wylaczenie paska postepu
-  ProgressBar->Visible = false;
-  ProgressLabel->Visible = false;
-  //Wylaczenie paska postepu na taskbarze
-  Taskbar->ProgressState = TTaskBarProgressState::None;
-  //Default caption
-  ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
-  if(ForceDisconnect)
-  {
-	ManualAvatarsUpdateButton->Enabled = true;
-	ForceDisconnect = false;
-  }
-  //Wylaczenie watku
-  ManualAvatarsUpdateThread->Stop();
+	//Ustawianie daty ostatniej aktualizacji
+	TDateTime pLogTime = TDateTime::CurrentDateTime();
+	UnicodeString pLogTimeStr = pLogTime.FormatString("yyyy-mm-dd hh:nn:ss");
+	if(NewAvatars) LastAvatarsUpdateLabel->Caption = pLogTimeStr + " (" + IntToStr(NewAvatars) + ")";
+	else LastAvatarsUpdateLabel->Caption = pLogTimeStr;
+	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+	Ini->WriteString("Avatars", "LastUpdate", pLogTimeStr);
+	Ini->WriteInteger("Avatars", "LastUpdateCount", NewAvatars);
+	delete Ini;
+	//Wylaczenie paska postepu
+	ProgressBar->Visible = false;
+	ProgressLabel->Visible = false;
+	//Wylaczenie paska postepu na taskbarze
+	Taskbar->ProgressState = TTaskBarProgressState::None;
+	//Default caption
+	ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
+	if(ForceDisconnect)
+	{
+		ManualAvatarsUpdateButton->Enabled = true;
+		ForceDisconnect = false;
+	}
+	//Wylaczenie watku
+	ManualAvatarsUpdateThread->Stop();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AutoAvatarsUpdateThreadRun(TIdThreadComponent *Sender)
 {
-  //Petla aktualizacji
-  int NewAvatars=0;
-  for(int Count=0;Count<FileListBox->Items->Count;Count++)
-  {
-	//Ustawianie paska postepu
-	FileListBox->ItemIndex = Count;
-	ProgressLabel->Caption = "(" + IntToStr(Count+1) + "/" + IntToStr(FileListBox->Items->Count) + ") " + ExtractFileName(FileListBox->FileName) + "...";
-	//Tworzenie nowego pliku w pamieci
-	TMemoryStream* MemFile = new TMemoryStream;
-	MemFile->Position = 0;
-	//Ustalanie adresu pobierania awataru
-	UnicodeString UpdateURL;
-	UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) + "/standard";
-	//Pobieranie awatara
-	if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
+	//Petla aktualizacji
+	int NewAvatars=0;
+	for(int Count=0;Count<FileListBox->Items->Count;Count++)
 	{
-	  MemFile->Position = 0;
-
-	  if(MemFile->Size!=0)
-	  {
-		MemFile->SaveToFile(FileListBox->FileName + ".tmp");
-		delete MemFile;
-
-		if(MD5File(FileListBox->FileName + ".tmp")!=MD5File(FileListBox->FileName))
+		//Ustawianie paska postepu
+		FileListBox->ItemIndex = Count;
+		ProgressLabel->Caption = "(" + IntToStr(Count+1) + "/" + IntToStr(FileListBox->Items->Count) + ") " + ExtractFileName(FileListBox->FileName) + "...";
+		//Tworzenie nowego pliku w pamieci
+		TMemoryStream* MemFile = new TMemoryStream;
+		MemFile->Position = 0;
+		//Ustalanie adresu pobierania awataru
+		UnicodeString UpdateURL;
+		UpdateURL = "http://api.blabler.pl/avatar/" + ExtractFileName(FileListBox->FileName) + "/standard";
+		//Pobieranie awatara
+		if(AUIdHTTPGetFileToMem(MemFile,UpdateURL))
 		{
-		  DeleteFile(FileListBox->FileName);
-		  MoveFile((FileListBox->FileName + ".tmp").w_str(),FileListBox->FileName.w_str());
-		  NewAvatars++;
+			MemFile->Position = 0;
+			if(MemFile->Size!=0)
+			{
+				MemFile->SaveToFile(FileListBox->FileName + ".tmp");
+				delete MemFile;
+				if(MD5File(FileListBox->FileName + ".tmp")!=MD5File(FileListBox->FileName))
+				{
+					DeleteFile(FileListBox->FileName);
+					MoveFile((FileListBox->FileName + ".tmp").w_str(),FileListBox->FileName.w_str());
+					NewAvatars++;
+				}
+				else DeleteFile(FileListBox->FileName + ".tmp");
+			}
+			else delete MemFile;
 		}
-		else
-		 DeleteFile(FileListBox->FileName + ".tmp");
-	  }
-	  else
-	   delete MemFile;
+		else delete MemFile;
+		//Kolejny plik
+		ProgressBar->Position++;
+		Taskbar->ProgressValue++;
+		//Wymuszenie wylaczenia
+		if(ForceDisconnect) Count = FileListBox->Items->Count;
 	}
-	else
-	 delete MemFile;
-	//Kolejny plik
-	ProgressBar->Position++;
-	Taskbar->ProgressValue++;
-	//Wymuszenie wylaczenia
-	if(ForceDisconnect) Count = FileListBox->Items->Count;
-  }
-  //Ustawianie daty ostatniej aktualizacji
-  TDateTime pLogTime = TDateTime::CurrentDateTime();
-  UnicodeString pLogTimeStr = pLogTime.FormatString("yyyy-mm-dd hh:nn:ss");
-  if(NewAvatars) LastAvatarsUpdateLabel->Caption = pLogTimeStr + " (" + IntToStr(NewAvatars) + ")";
-  else LastAvatarsUpdateLabel->Caption = pLogTimeStr;
-  TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
-  Ini->WriteString("Avatars", "LastUpdate", pLogTimeStr);
-  Ini->WriteInteger("Avatars", "LastUpdateCount", NewAvatars);
-  delete Ini;
-  //Wylaczenie paska postepu
-  ProgressBar->Visible = false;
-  ProgressLabel->Visible = false;
-  //Wylaczenie paska postepuna taskbarze
-  Taskbar->ProgressState = TTaskBarProgressState::None;
-  //Default caption
-  ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
-  if(ForceDisconnect)
-  {
-	ManualAvatarsUpdateButton->Enabled = true;
-	ForceDisconnect = false;
-  }
-  //Wylaczenie watku
-  AutoAvatarsUpdateThread->Stop();
+	//Ustawianie daty ostatniej aktualizacji
+	TDateTime pLogTime = TDateTime::CurrentDateTime();
+	UnicodeString pLogTimeStr = pLogTime.FormatString("yyyy-mm-dd hh:nn:ss");
+	if(NewAvatars) LastAvatarsUpdateLabel->Caption = pLogTimeStr + " (" + IntToStr(NewAvatars) + ")";
+	else LastAvatarsUpdateLabel->Caption = pLogTimeStr;
+	TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+	Ini->WriteString("Avatars", "LastUpdate", pLogTimeStr);
+	Ini->WriteInteger("Avatars", "LastUpdateCount", NewAvatars);
+	delete Ini;
+	//Wylaczenie paska postepu
+	ProgressBar->Visible = false;
+	ProgressLabel->Visible = false;
+	//Wylaczenie paska postepuna taskbarze
+	Taskbar->ProgressState = TTaskBarProgressState::None;
+	//Default caption
+	ManualAvatarsUpdateButton->Caption ="SprawdŸ aktualizacje";
+	if(ForceDisconnect)
+	{
+		ManualAvatarsUpdateButton->Enabled = true;
+		ForceDisconnect = false;
+	}
+	//Wylaczenie watku
+	AutoAvatarsUpdateThread->Stop();
 }
 //---------------------------------------------------------------------------*/
 
 void __fastcall TBlablerForm::AUIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
-		  __int64 AWorkCountMax)
+			__int64 AWorkCountMax)
 {
-  //Wlaczenie timera pilnujacego zawieszenie polaczenia
-  AUIdHTTPTimer->Enabled = true;
+	//Wlaczenie timera pilnujacego zawieszenie polaczenia
+	AUIdHTTPTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AUIdHTTPWork(TObject *ASender, TWorkMode AWorkMode, __int64 AWorkCount)
 
 {
-  //Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
-  AUIdHTTPTimer->Enabled = false;
-  AUIdHTTPTimer->Enabled = true;
+	//Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
+	AUIdHTTPTimer->Enabled = false;
+	AUIdHTTPTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AUIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
 
 {
-  //Wylaczenie timera pilnujacego zawieszenie polaczenia
-  AUIdHTTPTimer->Enabled = false;
+	//Wylaczenie timera pilnujacego zawieszenie polaczenia
+	AUIdHTTPTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AUIdHTTPTimerTimer(TObject *Sender)
 {
-  //Wylaczenie timera pilnujacego zawieszenie polaczenia
-  AUIdHTTPTimer->Enabled = false;
-  //Odznaczenie wymuszenia przerwania polaczenia
-  AUIdHTTPManualDisconnected = true;
-  //Przerwanie polaczenia
-  AUIdHTTP->Disconnect();
+	//Wylaczenie timera pilnujacego zawieszenie polaczenia
+	AUIdHTTPTimer->Enabled = false;
+	//Odznaczenie wymuszenia przerwania polaczenia
+	AUIdHTTPManualDisconnected = true;
+	//Przerwanie polaczenia
+	AUIdHTTP->Disconnect();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AIdHTTPWorkBegin(TObject *ASender, TWorkMode AWorkMode,
-		  __int64 AWorkCountMax)
+			__int64 AWorkCountMax)
 {
-  //Wlaczenie timera pilnujacego zawieszenie polaczenia
-  AvatarsIdHTTPTimer->Enabled = true;
+	//Wlaczenie timera pilnujacego zawieszenie polaczenia
+	AvatarsIdHTTPTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AIdHTTPWork(TObject *ASender, TWorkMode AWorkMode,
-		  __int64 AWorkCount)
+			__int64 AWorkCount)
 {
-  //Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
-  AvatarsIdHTTPTimer->Enabled = false;
-  AvatarsIdHTTPTimer->Enabled = true;
+	//Ponowne wlaczenie timera pilnujacego zawieszenie polaczenia
+	AvatarsIdHTTPTimer->Enabled = false;
+	AvatarsIdHTTPTimer->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AIdHTTPWorkEnd(TObject *ASender, TWorkMode AWorkMode)
 {
-  //Wylaczenie timera pilnujacego zawieszenie polaczenia
-  AvatarsIdHTTPTimer->Enabled = false;
+	//Wylaczenie timera pilnujacego zawieszenie polaczenia
+	AvatarsIdHTTPTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::AvatarsIdHTTPTimerTimer(TObject *Sender)
 {
-  //Wylaczenie timera pilnujacego zawieszenie polaczenia
-  AvatarsIdHTTPTimer->Enabled = false;
-  //Odznaczenie wymuszenia przerwania polaczenia
-  IdHTTPManualDisconnected = true;
-  //Przerwanie polaczenia
-  AIdHTTP->Disconnect();
+	//Wylaczenie timera pilnujacego zawieszenie polaczenia
+	AvatarsIdHTTPTimer->Enabled = false;
+	//Odznaczenie wymuszenia przerwania polaczenia
+	IdHTTPManualDisconnected = true;
+	//Przerwanie polaczenia
+	AIdHTTP->Disconnect();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::GetAvatarsThreadRun(TIdThreadComponent *Sender)
 {
-  //Pobranie itemu z listy awatarow do pobrania
-  UnicodeString UserName = GetAvatarsListItem();
-  //Jest jakis awatar do pobrania
-  if(!UserName.IsEmpty())
-  {
-	//Tworzenie nowego pliku w pamieci
-	TMemoryStream* MemFile = new TMemoryStream;
-	MemFile->Position = 0;
-	//Pobieranie awatara
-	if(AIdHTTPGetFileToMem(MemFile,"http://api.blabler.pl/avatar/" + UserName + "/standard"))
+	//Pobranie itemu z listy awatarow do pobrania
+	UnicodeString UserName = GetAvatarsListItem();
+	//Jest jakis awatar do pobrania
+	if(!UserName.IsEmpty())
 	{
-	  MemFile->Position = 0;
-	  if(MemFile->Size!=0)
-	  {
-		MemFile->SaveToFile(GetAvatarsDir() + "\\\\" + UserName);
-		delete MemFile;
-	  }
-	  else delete MemFile;
+		//Tworzenie nowego pliku w pamieci
+		TMemoryStream* MemFile = new TMemoryStream;
+		MemFile->Position = 0;
+		//Pobieranie awatara
+		if(AIdHTTPGetFileToMem(MemFile,"http://api.blabler.pl/avatar/" + UserName + "/standard"))
+		{
+			MemFile->Position = 0;
+			if(MemFile->Size!=0)
+			{
+				MemFile->SaveToFile(GetAvatarsDir() + "\\\\" + UserName);
+				delete MemFile;
+			}
+			else delete MemFile;
+		}
+		else delete MemFile;
 	}
-	else delete MemFile;
-  }
-  //Zatrzymanie watku
-  if(!ChkAvatarsListItem()) GetAvatarsThread->Stop();
+	//Zatrzymanie watku
+	if(!ChkAvatarsListItem()) GetAvatarsThread->Stop();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::ColorHighlightMsgEditChange(TObject *Sender)
 {
-  if((ColorHighlightMsgEdit->Text.Pos("#")==1)&&(ColorHighlightMsgEdit->Text.Length()==7))
-  {
-	//Parsowanie koloru
-	UnicodeString Color = ColorHighlightMsgEdit->Text;
-	Color.Delete(1,1);
-	UnicodeString Red = Color;
-	Red.Delete(3,Red.Length());
-	UnicodeString Green = Color;
-	Green.Delete(1,2);
-	Green.Delete(3,Green.Length());
-	UnicodeString Blue = Color;
-	Blue.Delete(1,4);
-	//Konwersja HEX na RGB
-	HighlightMsgColorSelect->ColorValue = (TColor)RGB(HexToInt(Red),HexToInt(Green),HexToInt(Blue));
-  }
+	if((ColorHighlightMsgEdit->Text.Pos("#")==1)&&(ColorHighlightMsgEdit->Text.Length()==7))
+	{
+		//Parsowanie koloru
+		UnicodeString Color = ColorHighlightMsgEdit->Text;
+		Color.Delete(1,1);
+		UnicodeString Red = Color;
+		Red.Delete(3,Red.Length());
+		UnicodeString Green = Color;
+		Green.Delete(1,2);
+		Green.Delete(3,Green.Length());
+		UnicodeString Blue = Color;
+		Blue.Delete(1,4);
+		//Konwersja HEX na RGB
+		HighlightMsgColorSelect->ColorValue = (TColor)RGB(HexToInt(Red),HexToInt(Green),HexToInt(Blue));
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TBlablerForm::sSkinManagerSysDlgInit(TacSysDlgData DlgData, bool &AllowSkinning)
 {
-  AllowSkinning = false;
+	AllowSkinning = false;
 }
 //---------------------------------------------------------------------------
-
