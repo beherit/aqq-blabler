@@ -78,6 +78,7 @@ TCustomIniFile* HighlightMsgColorsList = new TMemIniFile(ChangeFileExt(Applicati
 INT_PTR __stdcall OnActiveTab(WPARAM wParam, LPARAM lParam);
 INT_PTR __stdcall OnAddLine(WPARAM wParam, LPARAM lParam);
 INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam);
+INT_PTR __stdcall OnLangCodeChanged(WPARAM wParam, LPARAM lParam);
 INT_PTR __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam);
 INT_PTR __stdcall OnPerformCopyData(WPARAM wParam, LPARAM lParam);
 INT_PTR __stdcall OnPrimaryTab(WPARAM wParam, LPARAM lParam);
@@ -2068,6 +2069,51 @@ INT_PTR __stdcall OnColorChange(WPARAM wParam, LPARAM lParam)
 }
 //---------------------------------------------------------------------------
 
+//Hook na zmiane lokalizacji
+INT_PTR __stdcall OnLangCodeChanged(WPARAM wParam, LPARAM lParam)
+{
+	//Czyszczenie cache lokalizacji
+	ClearLngCache();
+	//Pobranie sciezki do katalogu prywatnego uzytkownika
+	UnicodeString PluginUserDir = GetPluginUserDir();
+	//Ustawienie sciezki lokalizacji wtyczki
+	UnicodeString LangCode = (wchar_t*)lParam;
+	LangPath = PluginUserDir + "\\\\Languages\\\\Blabler\\\\" + LangCode + "\\\\";
+	if(!DirectoryExists(LangPath))
+	{
+		LangCode = (wchar_t*)PluginLink.CallService(AQQ_FUNCTION_GETDEFLANGCODE,0,0);
+		LangPath = PluginUserDir + "\\\\Languages\\\\Blabler\\\\" + LangCode + "\\\\";
+	}
+	//Aktualizacja lokalizacji form wtyczki
+	for(int i=0;i<Screen->FormCount;i++)
+		LangForm(Screen->Forms[i]);
+	//Poprawki na formie ustawien
+	if(hSettingsForm)
+	{
+		//Odczyt typu stylu awatarow
+		if(!AvatarType) hSettingsForm->UsedAvatarsStyleLabel->Caption = GetLangStr("FromTheme");
+		else if(AvatarType==1) hSettingsForm->UsedAvatarsStyleLabel->Caption = GetLangStr("Own");
+		else hSettingsForm->UsedAvatarsStyleLabel->Caption = GetLangStr("Default");
+		//Odczyt ostatniej aktualizacji awatarow
+		TIniFile *Ini = new TIniFile(GetPluginUserDir() + "\\\\Blabler\\\\Settings.ini");
+        UnicodeString tLastUpdate = Ini->ReadString("Avatars","LastUpdate","");
+		if(!tLastUpdate.IsEmpty()) hSettingsForm->LastAvatarsUpdateLabel->Caption = tLastUpdate;
+		else hSettingsForm->LastAvatarsUpdateLabel->Caption = GetLangStr("NoData");
+		int tLastUpdateCount = Ini->ReadInteger("Avatars","LastUpdateCount",0);
+		if(tLastUpdateCount) hSettingsForm->LastAvatarsUpdateLabel->Caption = hSettingsForm->LastAvatarsUpdateLabel->Caption + " (" + IntToStr(tLastUpdateCount) + ")";
+		delete Ini;
+		//Poprawka pozycji komponentow
+		hSettingsForm->UsedAvatarsStyleLabel->Left = hSettingsForm->AvatarsStyleLabel->Left + hSettingsForm->Canvas->TextWidth(hSettingsForm->AvatarsStyleLabel->Caption) + 6;
+		hSettingsForm->EditAvatarsStyleLabel->Left = hSettingsForm->UsedAvatarsStyleLabel->Left + hSettingsForm->Canvas->TextWidth(hSettingsForm->UsedAvatarsStyleLabel->Caption) + 6;
+		hSettingsForm->AutoAvatarsUpdateComboBox->Left = hSettingsForm->AvatarsUpdateLabel->Left + hSettingsForm->Canvas->TextWidth(hSettingsForm->AvatarsUpdateLabel->Caption) + 6;
+		hSettingsForm->LastAvatarsUpdateLabel->Left = hSettingsForm->LastAvatarsUpdateInfoLabel->Left + hSettingsForm->Canvas->TextWidth(hSettingsForm->LastAvatarsUpdateInfoLabel->Caption) + 6;
+		hSettingsForm->AvatarsStyleGroupBox->Height = 42;
+	}
+
+	return 0;
+}
+//---------------------------------------------------------------------------
+
 //Hook na zaladowanie wszystkich modulow w AQQ (autoupdate awatarow)
 INT_PTR __stdcall OnModulesLoaded(WPARAM wParam, LPARAM lParam)
 {
@@ -2489,6 +2535,8 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Load(PPluginLink Link)
 	PluginLink.HookEvent(AQQ_CONTACTS_ADDLINE,OnAddLine);
 	//Hook na zmiane kolorystyki AlphaControls
 	PluginLink.HookEvent(AQQ_SYSTEM_COLORCHANGEV2,OnColorChange);
+	//Hook na zmiane lokalizacji
+	PluginLink.HookEvent(AQQ_SYSTEM_LANGCODE_CHANGED,OnLangCodeChanged);
 	//Hook na zaladowanie wszystkich modulow w AQQ (autoupdate awatarow)
 	PluginLink.HookEvent(AQQ_SYSTEM_MODULESLOADED,OnModulesLoaded);
 	//Hook na pobieranie adresow URL z roznych popup
@@ -2547,6 +2595,7 @@ extern "C" INT_PTR __declspec(dllexport) __stdcall Unload()
 	PluginLink.UnhookEvent(OnActiveTab);
 	PluginLink.UnhookEvent(OnAddLine);
 	PluginLink.UnhookEvent(OnColorChange);
+	PluginLink.UnhookEvent(OnLangCodeChanged);
 	PluginLink.UnhookEvent(OnModulesLoaded);
 	PluginLink.UnhookEvent(OnPerformCopyData);
 	PluginLink.UnhookEvent(OnThemeChanged);
