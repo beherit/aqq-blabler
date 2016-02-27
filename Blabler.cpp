@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-// Copyright (C) 2013-2015 Krzysztof Grochocki
+// Copyright (C) 2013-2016 Krzysztof Grochocki
 //
 // This file is part of Blabler
 //
@@ -2641,9 +2641,9 @@ extern "C" __declspec(dllexport) PPluginInfo __stdcall AQQPluginInfo(DWORD AQQVe
 	PluginInfo.Version = PLUGIN_MAKE_VERSION(1,2,8,0);
 	PluginInfo.Description = L"Wtyczka przeznaczona dla osób u¿ywaj¹cych mikrobloga Blabler (nastêpcy serwisu Blip.pl). Formatuje ona wszystkie wiadomoœci przychodz¹ce jak i wychodz¹ce dla bota, którego serwis udostêpnia zarówno dla sieci Jabber jak i Gadu-Gadu.";
 	PluginInfo.Author = L"Krzysztof Grochocki";
-	PluginInfo.AuthorMail = L"kontakt@beherit.pl";
+	PluginInfo.AuthorMail = L"contact@beherit.pl";
 	PluginInfo.Copyright = L"Krzysztof Grochocki";
-	PluginInfo.Homepage = L"http://beherit.pl";
+	PluginInfo.Homepage = L"beherit.pl";
 	PluginInfo.Flag = 0;
 	PluginInfo.ReplaceDefaultModule = 0;
 
